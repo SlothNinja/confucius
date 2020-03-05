@@ -4,10 +4,9 @@ import (
 	"cloud.google.com/go/datastore"
 	"github.com/SlothNinja/game"
 	"github.com/SlothNinja/log"
-	"github.com/SlothNinja/restful"
 	gtype "github.com/SlothNinja/type"
+	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
 )
 
 const kind = "Game"
@@ -72,15 +71,55 @@ func (g *Game) AfterCache() error {
 	return g.init(g.CTX())
 }
 
-func (g *Game) fromForm(c *gin.Context) (err error) {
+func (g *Game) fromForm(c *gin.Context) error {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	s := new(State)
+	obj := struct {
+		Title          string `form:"title"`
+		NumPlayers     int    `form:"num-players" binding"min=0,max=5"`
+		Password       string `form:"password"`
+		BasicGame      bool   `form:"basic-game"`
+		AdmiralVariant bool   `form:"admiral-variant"`
+	}{}
 
-	if err = restful.BindWith(c, s, binding.FormPost); err == nil {
-		g.BasicGame = s.BasicGame
-		g.AdmiralVariant = s.AdmiralVariant
+	err := c.ShouldBind(&obj)
+	if err != nil {
+		// if err = restful.BindWith(c, h2, binding.FormPost); err != nil {
+		return err
 	}
-	return
+
+	log.Debugf("obj: %#v", obj)
+
+	// s := new(State)
+
+	// if err = restful.BindWith(c, s, binding.FormPost); err == nil {
+	// 	g.BasicGame = s.BasicGame
+	// 	g.AdmiralVariant = s.AdmiralVariant
+	// }
+	cu := user.CurrentFrom(c)
+
+	g.Title = cu.Name + "'s Game"
+	if obj.Title != "" {
+		g.Title = obj.Title
+	}
+
+	g.NumPlayers = 4
+	if obj.NumPlayers >= 1 && obj.NumPlayers <= 5 {
+		g.NumPlayers = obj.NumPlayers
+	}
+
+	g.BasicGame = obj.BasicGame
+	g.AdmiralVariant = obj.AdmiralVariant
+	g.Password = obj.Password
+
+	g.Creator = cu
+	g.CreatorID = cu.ID()
+	g.CreatorSID = user.GenID(cu.GoogleID)
+	g.AddUser(cu)
+	g.Status = game.Recruiting
+	g.Type = gtype.Confucius
+
+	log.Debugf("g: %#v", g)
+	return nil
 }
