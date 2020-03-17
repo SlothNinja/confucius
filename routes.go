@@ -26,7 +26,6 @@ func AddRoutes(prefix string, engine *gin.Engine) {
 
 	// Show
 	g1.GET("/game/show/:hid",
-		//game.FetchHeader(GamesRoot),
 		Fetch,
 		mlog.Get,
 		game.SetAdmin(false),
@@ -35,7 +34,7 @@ func AddRoutes(prefix string, engine *gin.Engine) {
 
 	// Admin
 	g1.GET("/game/admin/:hid",
-		//game.FetchHeader(GamesRoot),
+		user.RequireAdmin,
 		Fetch,
 		mlog.Get,
 		game.SetAdmin(true),
@@ -44,37 +43,19 @@ func AddRoutes(prefix string, engine *gin.Engine) {
 
 	// Undo
 	g1.POST("/game/undo/:hid",
-		//game.FetchHeader(GamesRoot),
-		//UndoUpdate(),
 		Fetch,
 		Undo(prefix),
 	)
 
 	// Undo
 	g1.POST("/game/admin/:hid/endround",
-		//game.FetchHeader(GamesRoot),
-		//UndoUpdate(),
+		user.RequireAdmin,
 		Fetch,
 		EndRound(prefix),
 	)
 
-	//	// Redo
-	//	g1.POST("/game/redo/:hid",
-	//		//game.FetchHeader(GamesRoot),
-	//		RedoUpdate(),
-	//		Redo(prefix),
-	//	)
-	//
-	//	// Reset
-	//	g1.POST("/game/reset/:hid",
-	//		//game.FetchHeader(GamesRoot),
-	//		ResetUpdate(),
-	//		Reset(prefix),
-	//	)
-
 	// Finish
 	g1.POST("/game/finish/:hid",
-		//game.FetchHeader(GamesRoot),
 		Fetch,
 		stats.Fetch(user.CurrentFrom),
 		Finish(prefix),
@@ -83,7 +64,6 @@ func AddRoutes(prefix string, engine *gin.Engine) {
 	// Drop
 	g1.POST("/game/drop/:hid",
 		user.RequireCurrentUser(),
-		//game.FetchHeader(GamesRoot),
 		Fetch,
 		Drop(prefix),
 	)
@@ -91,7 +71,6 @@ func AddRoutes(prefix string, engine *gin.Engine) {
 	// Accept
 	g1.POST("/game/accept/:hid",
 		user.RequireCurrentUser(),
-		//game.FetchHeader(GamesRoot),
 		Fetch,
 		Accept(prefix),
 	)
@@ -99,7 +78,6 @@ func AddRoutes(prefix string, engine *gin.Engine) {
 	// Update
 	g1.POST("/game/show/:hid",
 		user.RequireCurrentUser(),
-		//game.FetchHeader(GamesRoot),
 		Fetch,
 		game.RequireCurrentPlayerOrAdmin(),
 		game.SetAdmin(false),
@@ -109,7 +87,6 @@ func AddRoutes(prefix string, engine *gin.Engine) {
 	// Admin Update
 	g1.POST("/game/admin/:hid",
 		user.RequireCurrentUser(),
-		//game.FetchHeader(GamesRoot),
 		Fetch,
 		game.RequireCurrentPlayerOrAdmin(),
 		game.SetAdmin(true),
@@ -118,7 +95,6 @@ func AddRoutes(prefix string, engine *gin.Engine) {
 
 	g1.PUT("/game/admin/:hid",
 		user.RequireCurrentUser(),
-		//game.FetchHeader(GamesRoot),
 		Fetch,
 		game.RequireCurrentPlayerOrAdmin(),
 		game.SetAdmin(true),
