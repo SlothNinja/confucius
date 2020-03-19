@@ -201,7 +201,7 @@ func Show(prefix string) gin.HandlerFunc {
 		cu := user.CurrentFrom(c)
 		c.HTML(http.StatusOK, prefix+"/show", gin.H{
 			"Context":    c,
-			"VersionID":  appengine.VersionID(appengine.NewContext(c.Request)),
+			"VersionID":  sn.VersionID(),
 			"CUser":      cu,
 			"Game":       g,
 			"IsAdmin":    user.IsAdmin(c),
@@ -265,7 +265,7 @@ func Update(prefix string) gin.HandlerFunc {
 
 			d := gin.H{
 				"Context":   c,
-				"VersionID": appengine.VersionID(appengine.NewContext(c.Request)),
+				"VersionID": sn.VersionID(),
 				"CUser":     cu,
 				"Game":      g,
 				"IsAdmin":   user.IsAdmin(c),
@@ -455,7 +455,7 @@ func Index(prefix string) gin.HandlerFunc {
 		case game.Recruiting:
 			c.HTML(http.StatusOK, "shared/invitation_index", gin.H{
 				"Context":   c,
-				"VersionID": appengine.VersionID(appengine.NewContext(c.Request)),
+				"VersionID": sn.VersionID(),
 				"CUser":     user.CurrentFrom(c),
 				"Games":     gs,
 				"Type":      gtype.Confucius.String(),
@@ -463,7 +463,7 @@ func Index(prefix string) gin.HandlerFunc {
 		default:
 			c.HTML(http.StatusOK, "shared/games_index", gin.H{
 				"Context":   c,
-				"VersionID": appengine.VersionID(appengine.NewContext(c.Request)),
+				"VersionID": sn.VersionID(),
 				"CUser":     user.CurrentFrom(c),
 				"Games":     gs,
 				"Type":      gtype.Confucius.String(),
@@ -487,7 +487,7 @@ func NewAction(prefix string) gin.HandlerFunc {
 
 		c.HTML(http.StatusOK, prefix+"/new", gin.H{
 			"Context":   c,
-			"VersionID": appengine.VersionID(appengine.NewContext(c.Request)),
+			"VersionID": sn.VersionID(),
 			"CUser":     user.CurrentFrom(c),
 			"Game":      g,
 		})
