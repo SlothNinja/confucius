@@ -12,6 +12,7 @@ import (
 	"github.com/SlothNinja/contest"
 	"github.com/SlothNinja/game"
 	"github.com/SlothNinja/log"
+	"github.com/SlothNinja/memcache"
 	"github.com/SlothNinja/mlog"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
@@ -19,8 +20,6 @@ import (
 	"github.com/SlothNinja/user"
 	stats "github.com/SlothNinja/user-stats"
 	"github.com/gin-gonic/gin"
-	"google.golang.org/appengine"
-	"google.golang.org/appengine/memcache"
 )
 
 //type Action func(*Game, url.Values) (string, game.ActionType, error)
@@ -248,7 +247,7 @@ func Update(prefix string) gin.HandlerFunc {
 			}
 		case actionType == game.Undo:
 			mkey := g.UndoKey(c)
-			if err := memcache.Delete(appengine.NewContext(c.Request), mkey); err != nil && err != memcache.ErrCacheMiss {
+			if err := memcache.Delete(c, mkey); err != nil && err != memcache.ErrCacheMiss {
 				log.Errorf("memcache.Delete error: %s", err)
 				c.Redirect(http.StatusSeeOther, showPath(c, prefix))
 				return
@@ -304,7 +303,7 @@ func (g *Game) save(c *gin.Context) error {
 			return err
 		}
 
-		err = memcache.Delete(appengine.NewContext(c.Request), g.UndoKey(c))
+		err = memcache.Delete(c, g.UndoKey(c))
 		if err == memcache.ErrCacheMiss {
 			return nil
 		}
@@ -343,7 +342,7 @@ func (g *Game) saveWith(c *gin.Context, ks []*datastore.Key, es []interface{}) e
 			return err
 		}
 
-		err = memcache.Delete(appengine.NewContext(c.Request), g.UndoKey(c))
+		err = memcache.Delete(c, g.UndoKey(c))
 		if err == memcache.ErrCacheMiss {
 			return nil
 		}
@@ -376,7 +375,7 @@ func (g *Game) cache(c *gin.Context) error {
 		return err
 	}
 	item.Value = v
-	return memcache.Set(appengine.NewContext(c.Request), item)
+	return memcache.Set(c, item)
 }
 
 func wrap(s *stats.Stats, cs contest.Contests) ([]*datastore.Key, []interface{}) {
@@ -420,7 +419,7 @@ func Undo(prefix string) gin.HandlerFunc {
 			return
 		}
 		mkey := g.UndoKey(c)
-		if err := memcache.Delete(appengine.NewContext(c.Request), mkey); err != nil && err != memcache.ErrCacheMiss {
+		if err := memcache.Delete(c, mkey); err != nil && err != memcache.ErrCacheMiss {
 			log.Errorf("Controller#Undo Error: %s", err)
 		}
 	}
@@ -670,7 +669,7 @@ func mcGet(c *gin.Context, g *Game) error {
 	defer log.Debugf("Exiting")
 
 	mkey := g.GetHeader().UndoKey(c)
-	item, err := memcache.Get(appengine.NewContext(c.Request), mkey)
+	item, err := memcache.Get(c, mkey)
 	if err != nil {
 		return err
 	}
