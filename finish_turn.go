@@ -2,7 +2,6 @@ package confucius
 
 import (
 	"net/http"
-	"time"
 
 	"cloud.google.com/go/datastore"
 	"github.com/SlothNinja/contest"
@@ -14,11 +13,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Finish(prefix string) gin.HandlerFunc {
+func (srv server) finish(prefix string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		log.Debugf("Entering")
 		defer log.Debugf("Exiting")
-		defer c.Redirect(http.StatusSeeOther, showPath(c, prefix))
 
 		g := gameFrom(c)
 		oldCP := g.CurrentPlayer()
@@ -50,6 +48,7 @@ func Finish(prefix string) gin.HandlerFunc {
 
 		if err != nil {
 			log.Errorf(err.Error())
+			c.Redirect(http.StatusSeeOther, showPath(c, prefix))
 			return
 		}
 
@@ -57,14 +56,14 @@ func Finish(prefix string) gin.HandlerFunc {
 		if cs != nil {
 			g.Phase = GameOver
 			g.Status = game.Completed
-			ks, es := wrap(s.GetUpdate(c, time.Time(g.UpdatedAt)), cs)
-			err = g.saveWith(c, ks, es)
+			ks, es := wrap(s.GetUpdate(c, g.UpdatedAt), cs)
+			err = srv.saveWith(c, g, ks, es)
 			if err == nil {
 				err = g.SendEndGameNotifications(c)
 			}
 		} else {
-			s := s.GetUpdate(c, time.Time(g.UpdatedAt))
-			err = g.saveWith(c, []*datastore.Key{s.Key}, []interface{}{s})
+			s := s.GetUpdate(c, g.UpdatedAt)
+			err = srv.saveWith(c, g, []*datastore.Key{s.Key}, []interface{}{s})
 			if err == nil {
 				if newCP := g.CurrentPlayer(); newCP != nil && oldCP.ID() != newCP.ID() {
 					err = g.SendTurnNotificationsTo(c, newCP)
@@ -76,6 +75,7 @@ func Finish(prefix string) gin.HandlerFunc {
 			log.Errorf(err.Error())
 		}
 
+		c.Redirect(http.StatusSeeOther, showPath(c, prefix))
 		return
 	}
 }
