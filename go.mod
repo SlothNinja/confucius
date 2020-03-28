@@ -15,7 +15,7 @@ require (
 	github.com/SlothNinja/sn v0.0.0-20200319230317-a899e08418dc
 	github.com/SlothNinja/type v0.0.0-20200316011604-5ac825cb08e3
 	github.com/SlothNinja/user v0.0.0-20200318220453-ddf5c131881a
-	github.com/SlothNinja/user-stats v0.0.0-20200316003629-dfe63e057543
+	github.com/SlothNinja/user-stats v0.0.0-20200328172023-f741b97fd54d
 	github.com/gin-gonic/gin v1.5.0
 	github.com/mailjet/mailjet-apiv3-go v0.0.0-20190724151621-55e56f74078c
 )
