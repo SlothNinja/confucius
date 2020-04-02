@@ -135,60 +135,7 @@ func (ps Players) removeAt(i int) Players {
 	return append(ps[:i], ps[i+1:]...)
 }
 
-//func (g *Game) determinePlaces() []Players {
-//	// sort players by score
-//	players := g.Players()
-//	sort.Sort(Reverse{ByAll{players}})
-//	g.setPlayers(players)
-//	places := make([]Players, 0)
-//	if !g.AdmiralVariant {
-//		player := g.Players()[0]
-//		players = Players{player}
-//		for _, p := range g.Players()[1:] {
-//			if p.compare(player) == game.EqualTo {
-//				players = append(players, p)
-//			} else {
-//				places = append(places, players)
-//				players = Players{p}
-//				player = p
-//			}
-//		}
-//		return append(places, players)
-//	} else {
-//		winner := g.Players()[0]
-//		if g.Players()[0].Score == g.Players()[1].Score {
-//			// Admiral win.  Find Admiral and place at g.Players[0]
-//			winner = g.Admiral()
-//			ps := Players{}
-//			for i, p := range g.Players() {
-//				if p.IsAdmiral() {
-//					ps = g.Players().removeAt(i)
-//					break
-//				}
-//			}
-//			g.setPlayers(append(Players{winner}, ps...))
-//		}
-//		places = []Players{Players{winner}}
-//		player := g.Players()[1]
-//		players = Players{player}
-//		for _, p := range g.Players()[2:] {
-//			if p.Score == player.Score {
-//				players = append(players, p)
-//			} else {
-//				places = append(places, players)
-//				players = Players{p}
-//				player = p
-//			}
-//		}
-//		return append(places, players)
-//	}
-//}
-
-//func (p *Player) Rating() *rating.Rating {
-//	return rating.For(p.User(), p.Game().Type)
-//}
-//
-func (g *Game) determinePlaces(c *gin.Context) contest.Places {
+func (client Client) determinePlaces(c *gin.Context, g *Game) (contest.Places, error) {
 	// sort players by score
 	players := g.Players()
 	sort.Sort(Reverse{ByAll{players}})
@@ -214,11 +161,15 @@ func (g *Game) determinePlaces(c *gin.Context) contest.Places {
 		rmap := make(contest.ResultsMap, 0)
 		results := make(contest.Results, 0)
 		for j, p2 := range g.Players() {
+			r, err := client.Rating.For(c, p2.User(), g.Type)
+			if err != nil {
+				return nil, err
+			}
 			result := &contest.Result{
 				GameID: g.ID(),
 				Type:   g.Type,
-				R:      p2.Rating().R,
-				RD:     p2.Rating().RD,
+				R:      r.R,
+				RD:     r.RD,
 			}
 			switch c := p1.compare(p2); {
 			case i == j:
@@ -239,7 +190,7 @@ func (g *Game) determinePlaces(c *gin.Context) contest.Places {
 		rmap[p1.User().Key] = results
 		places = append(places, rmap)
 	}
-	return places
+	return places, nil
 }
 
 func (p *Player) init(gr game.Gamer) {

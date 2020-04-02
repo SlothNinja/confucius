@@ -15,7 +15,7 @@ func init() {
 	gob.RegisterName("*game.announceWinnersEntry", new(announceWinnersEntry))
 }
 
-func (g *Game) endOfRoundPhase(c *gin.Context) (cs contest.Contests) {
+func (client Client) endOfRoundPhase(c *gin.Context, g *Game) (contest.Contests, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
@@ -23,9 +23,9 @@ func (g *Game) endOfRoundPhase(c *gin.Context) (cs contest.Contests) {
 	g.placeNewOfficialsPhase(c)
 	if completed := g.discardPhase(c); completed {
 		g.returnActionCubesPhase(c)
-		cs = g.endOfGamePhase(c)
+		return client.endOfGamePhase(c, g)
 	}
-	return
+	return nil, nil
 }
 
 func (g *Game) placeNewOfficialsPhase(c *gin.Context) {

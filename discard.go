@@ -114,9 +114,10 @@ func (g *Game) EnableDiscard(c *gin.Context) bool {
 		!g.CurrentPlayer().PerformedAction
 }
 
-func (g *Game) discardPhaseFinishTurn(c *gin.Context) (s *stats.Stats, cs contest.Contests, err error) {
-	if s, err = g.validateFinishTurn(c); err != nil {
-		return
+func (client Client) discardPhaseFinishTurn(c *gin.Context, g *Game) (*stats.Stats, contest.Contests, error) {
+	s, err := g.validateFinishTurn(c)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	cp := g.CurrentPlayer()
@@ -124,7 +125,11 @@ func (g *Game) discardPhaseFinishTurn(c *gin.Context) (s *stats.Stats, cs contes
 
 	if len(g.CurrentPlayerers()) == 0 {
 		g.returnActionCubesPhase(c)
-		cs = g.endOfGamePhase(c)
+		cs, err := client.endOfGamePhase(c, g)
+		if err != nil {
+			return nil, nil, err
+		}
+		return s, cs, nil
 	}
-	return
+	return s, nil, nil
 }

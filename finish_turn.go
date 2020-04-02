@@ -31,17 +31,17 @@ func (client Client) finish(prefix string) gin.HandlerFunc {
 		case Actions:
 			s, err = g.actionsPhaseFinishTurn(c)
 		case ImperialFavour:
-			s, cs, err = g.imperialFavourFinishTurn(c)
+			s, cs, err = client.imperialFavourFinishTurn(c, g)
 		case ChooseChiefMinister:
 			s, err = g.chooseChiefMinisterPhaseFinishTurn(c)
 		case Discard:
-			s, cs, err = g.discardPhaseFinishTurn(c)
+			s, cs, err = client.discardPhaseFinishTurn(c, g)
 		case ImperialExamination:
 			s, err = g.tutorStudentsPhaseFinishTurn(c)
 		case ExaminationResolution:
-			s, cs, err = g.examinationResolutionFinishTurn(c)
+			s, cs, err = client.examinationResolutionFinishTurn(c, g)
 		case MinistryResolution:
-			s, cs, err = g.ministryResolutionFinishTurn(c)
+			s, cs, err = client.ministryResolutionFinishTurn(c, g)
 		default:
 			err = sn.NewVError("Improper Phase for finishing turn.")
 		}
@@ -151,12 +151,13 @@ func (g *Game) actionPhaseNextPlayer(players ...*Player) *Player {
 	return nil
 }
 
-func (g *Game) imperialFavourFinishTurn(c *gin.Context) (s *stats.Stats, cs contest.Contests, err error) {
+func (client Client) imperialFavourFinishTurn(c *gin.Context, g *Game) (*stats.Stats, contest.Contests, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	if s, err = g.validateFinishTurn(c); err != nil {
-		return
+	s, err := g.validateFinishTurn(c)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	cp := g.CurrentPlayer()
@@ -167,13 +168,18 @@ func (g *Game) imperialFavourFinishTurn(c *gin.Context) (s *stats.Stats, cs cont
 	cp.EmperorHand.Reveal()
 
 	g.buildWallPhase(c)
-	if completed := g.examinationPhase(c); completed {
-		if completed := g.ministryResolutionPhase(c, false); completed {
-			g.invasionPhase(c)
-			cs = g.endOfRoundPhase(c)
-		}
+	completed := g.examinationPhase(c)
+	if !completed {
+		return s, nil, nil
 	}
-	return
+
+	completed = g.ministryResolutionPhase(c, false)
+	if !completed {
+		return s, nil, nil
+	}
+	g.invasionPhase(c)
+	cs, err := client.endOfRoundPhase(c, g)
+	return s, cs, err
 }
 
 func (g *Game) chooseChiefMinisterPhaseFinishTurn(c *gin.Context) (s *stats.Stats, err error) {
@@ -192,12 +198,13 @@ func (g *Game) chooseChiefMinisterPhaseFinishTurn(c *gin.Context) (s *stats.Stat
 	return
 }
 
-func (g *Game) examinationResolutionFinishTurn(c *gin.Context) (s *stats.Stats, cs contest.Contests, err error) {
+func (client Client) examinationResolutionFinishTurn(c *gin.Context, g *Game) (*stats.Stats, contest.Contests, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	if s, err = g.validateFinishTurn(c); err != nil {
-		return
+	s, err := g.validateFinishTurn(c)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	// Place New Candidate
@@ -213,9 +220,12 @@ func (g *Game) examinationResolutionFinishTurn(c *gin.Context) (s *stats.Stats, 
 		}
 	}
 	g.Candidates = g.Candidates[i:]
-	if completed := g.ministryResolutionPhase(c, false); completed {
-		g.invasionPhase(c)
-		cs = g.endOfRoundPhase(c)
+	completed := g.ministryResolutionPhase(c, false)
+	if !completed {
+		return s, nil, nil
 	}
-	return
+
+	g.invasionPhase(c)
+	cs, err := client.endOfRoundPhase(c, g)
+	return s, cs, err
 }

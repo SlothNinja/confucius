@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (g *Game) ministryResolutionPhase(c *gin.Context, ending bool) (completed bool) {
+func (g *Game) ministryResolutionPhase(c *gin.Context, ending bool) bool {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
@@ -23,13 +23,13 @@ func (g *Game) ministryResolutionPhase(c *gin.Context, ending bool) (completed b
 	for _, mid := range []MinistryID{Bingbu, Hubu, Gongbu} {
 		m := g.Ministries[mid]
 		if !m.Resolved && (ending || m.MarkerCount() == 7) {
-			if completed = g.initMinistryResolution(c, m); !completed {
-				return
+			completed := g.initMinistryResolution(c, m)
+			if !completed {
+				return completed
 			}
 		}
 	}
-	completed = true
-	return
+	return true
 }
 
 func (g *Game) ministryInProgress() *Ministry {
@@ -219,21 +219,28 @@ func (m *Ministry) playerToTempTransfer(playerCounts map[int]int) *Player {
 	return nil
 }
 
-func (g *Game) ministryResolutionFinishTurn(c *gin.Context) (s *stats.Stats, cs contest.Contests, err error) {
+func (client Client) ministryResolutionFinishTurn(c *gin.Context, g *Game) (*stats.Stats, contest.Contests, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	if s, err = g.validateFinishTurn(c); err != nil {
-		return
+	s, err := g.validateFinishTurn(c)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	cp := g.CurrentPlayer()
 	restful.AddNoticef(c, "%s finished turn.", g.NameFor(cp))
-	if resolved := g.resolve(c, g.ministryInProgress()); resolved {
-		if completed := g.ministryResolutionPhase(c, false); completed {
-			g.invasionPhase(c)
-			cs = g.endOfRoundPhase(c)
-		}
+	resolved := g.resolve(c, g.ministryInProgress())
+	if !resolved {
+		return s, nil, nil
 	}
-	return
+
+	completed := g.ministryResolutionPhase(c, false)
+	if !completed {
+		return s, nil, nil
+	}
+
+	g.invasionPhase(c)
+	cs, err := client.endOfRoundPhase(c, g)
+	return s, cs, err
 }

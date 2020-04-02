@@ -13,7 +13,7 @@ import (
 	"github.com/mailjet/mailjet-apiv3-go"
 )
 
-func (g *Game) endOfGamePhase(c *gin.Context) (cs contest.Contests) {
+func (client Client) endOfGamePhase(c *gin.Context, g *Game) (contest.Contests, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
@@ -21,15 +21,16 @@ func (g *Game) endOfGamePhase(c *gin.Context) (cs contest.Contests) {
 		g.newRoundPhase(c)
 		g.countGiftsPhase(c)
 		g.chooseChiefMinisterPhase(c)
-		return
+		return nil, nil
 	}
 
 	if !g.Ministries.allResolved() {
-		if completed := g.ministryResolutionPhase(c, true); !completed {
-			return
+		completed := g.ministryResolutionPhase(c, true)
+		if !completed {
+			return nil, nil
 		}
 	}
-	return g.endGameScoring(c)
+	return client.endGameScoring(c, g)
 }
 
 func (g *Game) endGame() bool {
@@ -45,14 +46,17 @@ func (ms Ministries) allResolved() bool {
 	return true
 }
 
-func (g *Game) endGameScoring(c *gin.Context) contest.Contests {
+func (client Client) endGameScoring(c *gin.Context, g *Game) (contest.Contests, error) {
 	g.Phase = EndGameScoring
 	g.ScoreChiefMinister()
 	g.ScoreAdmiral()
 	g.ScoreGeneral()
-	places := g.determinePlaces(c)
+	places, err := client.determinePlaces(c, g)
+	if err != nil {
+		return nil, err
+	}
 	g.SetWinners(places[0])
-	return contest.GenContests(c, places)
+	return contest.GenContests(c, places), nil
 }
 
 func toIDS(places []Players) [][]int64 {

@@ -36,8 +36,9 @@ func (g *Game) NewKey(c *gin.Context, id int64) *datastore.Key {
 	return newKey(c, id)
 }
 
-func (g *Game) init(c *gin.Context) error {
-	if err := g.Header.AfterLoad(g); err != nil {
+func (client Client) init(c *gin.Context, g *Game) error {
+	err := client.Game.AfterLoad(c, g.Header)
+	if err != nil {
 		return err
 	}
 
@@ -67,8 +68,8 @@ func (g *Game) init(c *gin.Context) error {
 	return nil
 }
 
-func (g *Game) AfterCache() error {
-	return g.init(g.CTX())
+func (client Client) AfterCache(c *gin.Context, g *Game) error {
+	return client.init(c, g)
 }
 
 func (g *Game) fromForm(c *gin.Context) error {
