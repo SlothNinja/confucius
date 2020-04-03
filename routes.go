@@ -114,7 +114,7 @@ func (client Client) addRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 	)
 
 	// Admin group
-	admin := engine.Group(prefix+"/admin", user.RequireAdmin)
+	admin := g.Group("/admin", user.RequireAdmin)
 
 	// Admin Get
 	admin.GET("/:hid",
