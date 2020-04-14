@@ -94,7 +94,7 @@ func (client Client) addRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 	)
 
 	// Add Message
-	g.PUT("/game/show/:hid/addmessage",
+	g.PUT("/show/:hid/addmessage",
 		user.RequireCurrentUser(),
 		client.MLog.Get,
 		client.MLog.AddMessage(prefix),
