@@ -98,7 +98,10 @@ func (g *Game) fromForm(c *gin.Context) error {
 	// 	g.BasicGame = s.BasicGame
 	// 	g.AdmiralVariant = s.AdmiralVariant
 	// }
-	cu := user.CurrentFrom(c)
+	cu, err := user.CurrentFrom(c)
+	if err != nil {
+		log.Debugf(err.Error())
+	}
 
 	g.Title = cu.Name + "'s Game"
 	if obj.Title != "" {
