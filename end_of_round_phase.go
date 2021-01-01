@@ -21,7 +21,8 @@ func (client Client) endOfRoundPhase(c *gin.Context, g *Game) (contest.Contests,
 
 	g.Phase = EndOfRound
 	g.placeNewOfficialsPhase(c)
-	if completed := g.discardPhase(c); completed {
+	completed := g.discardPhase(c)
+	if completed {
 		g.returnActionCubesPhase(c)
 		return client.endOfGamePhase(c, g)
 	}
@@ -48,7 +49,7 @@ func (g *Game) placeNewOfficialIn(m *Ministry) {
 	}
 }
 
-func (g *Game) newRoundPhase(c *gin.Context) {
+func (g *Game) newRoundPhase() {
 	log.Debugf("Entering")
 	defer log.Debugf("Entering")
 

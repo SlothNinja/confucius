@@ -9,6 +9,7 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
+	"github.com/SlothNinja/user"
 	stats "github.com/SlothNinja/user-stats"
 	"github.com/gin-gonic/gin"
 )
@@ -17,7 +18,7 @@ func init() {
 	gob.RegisterName("*game.discardEntry", new(discardEntry))
 }
 
-func (g *Game) discardPhase(c *gin.Context) (completed bool) {
+func (g *Game) discardPhase(c *gin.Context) bool {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
@@ -33,20 +34,15 @@ func (g *Game) discardPhase(c *gin.Context) (completed bool) {
 		}
 	}
 
-	if len(ps) == 0 {
-		completed = true
-
-	}
-	log.Debugf("ps: %#v", ps)
 	g.SetCurrentPlayerers(ps...)
-	return
+	return len(ps) == 0
 }
 
-func (g *Game) discard(c *gin.Context) (string, game.ActionType, error) {
+func (g *Game) discard(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	cards, err := g.validateDiscard(c)
+	cards, err := g.validateDiscard(c, cu)
 	if err != nil {
 		return "", game.None, err
 	}
@@ -86,7 +82,7 @@ func (e *discardEntry) HTML() template.HTML {
 	return restful.HTML("%s discarded %d cards.", e.Player().Name(), len(e.Discarded))
 }
 
-func (g *Game) validateDiscard(c *gin.Context) (ConCards, error) {
+func (g *Game) validateDiscard(c *gin.Context, cu *user.User) (ConCards, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
@@ -98,24 +94,25 @@ func (g *Game) validateDiscard(c *gin.Context) (ConCards, error) {
 	cp := g.CurrentPlayer()
 	newHandCount := len(cp.ConCardHand) - len(cards)
 	switch {
-	case !g.CUserIsCPlayerOrAdmin(c):
+	case !g.IsCurrentPlayer(cu):
 		return nil, sn.NewVError("Only a current player may discard cards.")
 	case g.Phase != Discard:
 		return nil, sn.NewVError("You cannot discard cards during the %s phase.", g.PhaseName())
 	case newHandCount != 4:
 		return nil, sn.NewVError("You must discard down to 4 cards.  You have discarded to %d cards.",
 			newHandCount)
+	default:
+		return cards, nil
 	}
-	return cards, nil
 }
 
-func (g *Game) EnableDiscard(c *gin.Context) bool {
-	return g.CUserIsCPlayerOrAdmin(c) && g.Phase == Discard && g.CurrentPlayer() != nil &&
+func (g *Game) EnableDiscard(cu *user.User) bool {
+	return g.IsCurrentPlayer(cu) && g.Phase == Discard && g.CurrentPlayer() != nil &&
 		!g.CurrentPlayer().PerformedAction
 }
 
-func (client Client) discardPhaseFinishTurn(c *gin.Context, g *Game) (*stats.Stats, contest.Contests, error) {
-	s, err := g.validateFinishTurn(c)
+func (client Client) discardPhaseFinishTurn(c *gin.Context, g *Game, cu *user.User) (*stats.Stats, contest.Contests, error) {
+	s, err := g.validateFinishTurn(c, cu)
 	if err != nil {
 		return nil, nil, err
 	}

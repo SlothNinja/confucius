@@ -8,6 +8,7 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
+	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,11 +16,11 @@ func init() {
 	gob.RegisterName("*game.bribeOfficialEntry", new(bribeOfficialEntry))
 }
 
-func (g *Game) bribeOfficial(c *gin.Context) (string, game.ActionType, error) {
+func (g *Game) bribeOfficial(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	cards, ministry, official, cubes, err := g.validateBribeOfficial(c)
+	cards, ministry, official, cubes, err := g.validateBribeOfficial(c, cu)
 	if err != nil {
 		return "", game.None, err
 	}
@@ -70,45 +71,51 @@ func (g *bribeOfficialEntry) HTML() template.HTML {
 		g.Player().Name(), length, pluralize("card", length), g.Played.Coins(), g.MinistryName, g.Seniority)
 }
 
-func (g *Game) validateBribeOfficial(c *gin.Context) (cds ConCards, m *Ministry, o *OfficialTile, cbs int, err error) {
-	if cbs, err = g.validatePlayerAction(c); err != nil {
-		return
+func (g *Game) validateBribeOfficial(c *gin.Context, cu *user.User) (ConCards, *Ministry, *OfficialTile, int, error) {
+	cbs, err := g.validatePlayerAction(c, cu)
+	if err != nil {
+		return nil, nil, nil, 0, err
 	}
 
-	if cds, err = g.getConCards(c, "bribe-official"); err != nil {
-		return
+	cds, err := g.getConCards(c, "bribe-official")
+	if err != nil {
+		return nil, nil, nil, 0, err
 	}
 
-	if m, o, err = g.getMinistryAndOfficial(c, "bribe-official"); err != nil {
-		return
+	m, o, err := g.getMinistryAndOfficial(c, "bribe-official")
+	if err != nil {
+		return nil, nil, nil, 0, err
 	}
 
 	cp := g.CurrentPlayer()
-	switch gp := cp.hasGiftObligationIn(m); {
+	gp := cp.hasGiftObligationIn(m)
+
+	switch {
 	case gp != nil:
-		err = sn.NewVError("You have a gift obligation to %s that prevents you from bribing another official in the %s ministry.", g.NameFor(gp), m.Name())
+		return nil, nil, nil, 0, sn.NewVError("You have a gift obligation to %s that prevents you from bribing another official in the %s ministry.", g.NameFor(gp), m.Name())
 	case o.Bribed():
-		err = sn.NewVError("You can't bribe an official that already has a marker.")
+		return nil, nil, nil, 0, sn.NewVError("You can't bribe an official that already has a marker.")
 	case cds.Coins() < o.CostFor(cp):
-		err = sn.NewVError("You selected cards having %d total coins, but you need %d coins to bribe the selected official.", cds.Coins(), cp.CostFor(o))
+		return nil, nil, nil, 0, sn.NewVError("You selected cards having %d total coins, but you need %d coins to bribe the selected official.", cds.Coins(), cp.CostFor(o))
+	default:
+		return cds, m, o, cbs, nil
 	}
-	return
 }
 
-func (p *Player) hasGiftObligationIn(m *Ministry) (ret *Player) {
+func (p *Player) hasGiftObligationIn(m *Ministry) *Player {
 	g := p.Game()
 	for _, p2 := range g.Players() {
-		if p2inf := p2.influenceIn(m); p.hasGiftFrom(p2) && p2inf > 0 && p.influenceIn(m) >= p2inf {
-			ret = p2
-			return
+		p2inf := p2.influenceIn(m)
+		if p.hasGiftFrom(p2) && p2inf > 0 && p.influenceIn(m) >= p2inf {
+			return p2
 		}
 	}
-	return
+	return nil
 }
 
-func (g *Game) EnableBribeOfficial(c *gin.Context) bool {
+func (g *Game) EnableBribeOfficial(cu *user.User) bool {
 	cp := g.CurrentPlayer()
-	return g.CUserIsCPlayerOrAdmin(c) && cp.canBribeAnOfficial()
+	return g.IsCurrentPlayer(cu) && cp.canBribeAnOfficial()
 }
 
 func (p *Player) canBribeAnOfficial() bool {

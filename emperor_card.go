@@ -31,19 +31,20 @@ const (
 var emperorCardTypes = []EmperorCardType{Cash, FreeGift, ExtraAction, BingbuBribery, HubuBribery, GongbuBribery, AnyBribery1, AnyBribery2, EmperorInsulted, RecruitFreeArmy}
 var briberyCardTypes = []EmperorCardType{BingbuBribery, HubuBribery, GongbuBribery, AnyBribery1, AnyBribery2}
 
-func (g *Game) BriberyCards() (cards EmperorCards) {
-	cards = make(EmperorCards, len(briberyCardTypes))
+func (g *Game) BriberyCards() EmperorCards {
+	cards := make(EmperorCards, len(briberyCardTypes))
 	for i, cardType := range briberyCardTypes {
 		cards[i] = &EmperorCard{Type: cardType}
 	}
 	return cards
 }
 
-func NewEmperorDeck() (deck EmperorCards) {
-	for _, t := range emperorCardTypes {
-		deck = append(deck, NewEmperorCard(t))
+func NewEmperorDeck() EmperorCards {
+	deck := make(EmperorCards, len(emperorCardTypes))
+	for i, t := range emperorCardTypes {
+		deck[i] = NewEmperorCard(t)
 	}
-	return
+	return deck
 }
 
 func (c *EmperorCard) equal(card *EmperorCard) bool {
@@ -54,10 +55,10 @@ func (c *EmperorCard) hasType(t EmperorCardType) bool {
 	return c.Type == t
 }
 
-func NewEmperorCard(t EmperorCardType) (card *EmperorCard) {
-	card = new(EmperorCard)
+func NewEmperorCard(t EmperorCardType) *EmperorCard {
+	card := new(EmperorCard)
 	card.Type = t
-	return
+	return card
 }
 
 func (cds *EmperorCards) Append(cards ...*EmperorCard) {
@@ -68,16 +69,17 @@ func (cds EmperorCards) AppendS(cards ...*EmperorCard) EmperorCards {
 	return append(cds, cards...)
 }
 
-func (cds *EmperorCards) Draw() (c *EmperorCard) {
+func (cds *EmperorCards) Draw() *EmperorCard {
+	var c *EmperorCard
 	*cds, c = cds.DrawS()
-	return
+	return c
 }
 
-func (cds EmperorCards) DrawS() (deck EmperorCards, c *EmperorCard) {
+func (cds EmperorCards) DrawS() (EmperorCards, *EmperorCard) {
 	i := sn.MyRand.Intn(len(cds))
-	c = cds[i]
-	deck = append(cds[:i], cds[i+1:]...)
-	return
+	c := cds[i]
+	deck := append(cds[:i], cds[i+1:]...)
+	return deck, c
 }
 
 func (cds EmperorCards) Reveal() {
@@ -90,23 +92,23 @@ func (cds *EmperorCards) Remove(cards ...*EmperorCard) {
 	*cds = cds.RemoveS(cards...)
 }
 
-func (cds EmperorCards) RemoveS(cards ...*EmperorCard) (es EmperorCards) {
-	es = cds
+func (cds EmperorCards) RemoveS(cards ...*EmperorCard) EmperorCards {
+	es := cds
 	for _, c := range cards {
 		es = es.remove(c)
 	}
-	return
+	return es
 }
 
-func (cds EmperorCards) remove(card *EmperorCard) (es EmperorCards) {
-	es = cds
+func (cds EmperorCards) remove(card *EmperorCard) EmperorCards {
+	es := cds
 	for i, c := range es {
 		if c.equal(card) {
 			es = es.removeAt(i)
 			break
 		}
 	}
-	return
+	return es
 }
 
 func (cds EmperorCards) removeAt(i int) EmperorCards {

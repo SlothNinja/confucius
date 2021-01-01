@@ -7,6 +7,7 @@ import (
 
 	"github.com/SlothNinja/game"
 	"github.com/SlothNinja/log"
+	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,30 +17,33 @@ func init() {
 
 // Returns true if no further player actions are needed in order
 // to resolve examination phase.
-func (g *Game) examinationPhase(c *gin.Context) (completed bool) {
+func (g *Game) examinationPhase(c *gin.Context, cu *user.User) bool {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	switch g.Phase, completed = ImperialExamination, true; {
+	g.Phase = ImperialExamination
+
+	switch {
 	case g.canResolveExamination():
-		completed = false
-		g.resolveExamination(c)
+		g.resolveExamination()
+		return false
 	case g.canHoldExamination():
 		// Select player before Chief Minister, so nextplayer selects Chief Minister.
 		// This seems round-about, but it triggers the logic to skip nextplayers(s), if he has no cards to play.
-		completed = false
 		i := game.IndexFor(g.ChiefMinister(), g.Playerers) - 1
 		if i == -1 {
 			i += g.NumPlayers
 		}
 
-		if p := g.tutorStudentsPhaseNextPlayer(c, g.PlayerByIndex(i)); p != nil {
+		p := g.tutorStudentsPhaseNextPlayer(g.PlayerByIndex(i))
+		if p != nil {
 			g.SetCurrentPlayerers(p)
-		} else {
-			g.resolveExamination(c)
+			return false
 		}
+		g.resolveExamination()
+		return false
 	}
-	return
+	return true
 }
 
 func (g *Game) canHoldExamination() bool {
@@ -66,12 +70,9 @@ func (g *Game) examinationForced() bool {
 	return g.ActionSpaces[ForceSpace].CubeCount() > 0
 }
 
-func (g *Game) resolveExamination(c *gin.Context) {
+func (g *Game) resolveExamination() {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
-
-	var winningCards, losingCards ConCards
-	var loser *Player
 
 	g.Phase = ExaminationResolution
 	g.beginningOfPhaseReset()
@@ -81,26 +82,30 @@ func (g *Game) resolveExamination(c *gin.Context) {
 		cp := can.Player()
 		g.SetCurrentPlayerers(cp)
 		cp.newStudentPromotionEntry(nil, nil, nil, false)
-	} else {
-		coins0 := can.PlayerCards.Coins()
-		coins1 := can.OtherPlayerCards.Coins()
-		if coins0 >= coins1 {
-			g.SetCurrentPlayerers(can.Player())
-			winningCards = can.PlayerCards
-			losingCards = can.OtherPlayerCards
-			loser = can.OtherPlayer()
-		} else {
-			g.SetCurrentPlayerers(can.OtherPlayer())
-			winningCards = can.OtherPlayerCards
-			losingCards = can.PlayerCards
-			loser = can.Player()
-		}
-		// Move played cards to discard pile
-		g.ConDiscardPile.Append(winningCards...)
-		g.ConDiscardPile.Append(losingCards...)
-		cp := g.CurrentPlayer()
-		cp.newStudentPromotionEntry(loser, winningCards, losingCards, true)
+		return
 	}
+
+	var winningCards, losingCards ConCards
+	var loser *Player
+
+	coins0 := can.PlayerCards.Coins()
+	coins1 := can.OtherPlayerCards.Coins()
+	if coins0 >= coins1 {
+		g.SetCurrentPlayerers(can.Player())
+		winningCards = can.PlayerCards
+		losingCards = can.OtherPlayerCards
+		loser = can.OtherPlayer()
+	} else {
+		g.SetCurrentPlayerers(can.OtherPlayer())
+		winningCards = can.OtherPlayerCards
+		losingCards = can.PlayerCards
+		loser = can.Player()
+	}
+	// Move played cards to discard pile
+	g.ConDiscardPile.Append(winningCards...)
+	g.ConDiscardPile.Append(losingCards...)
+	cp := g.CurrentPlayer()
+	cp.newStudentPromotionEntry(loser, winningCards, losingCards, true)
 }
 
 type studentPromotionEntry struct {
@@ -157,6 +162,6 @@ func (e *studentPromotionEntry) HTML() template.HTML {
 //	return g.twoStudents() && g.Candidate().Player().Equal(g.Candidate().OtherPlayer())
 //}
 
-func (g *Game) EnableTutorStudent(c *gin.Context) bool {
-	return g.CUserIsCPlayerOrAdmin(c) && g.Phase == ImperialExamination && !g.CurrentPlayer().PerformedAction
+func (g *Game) EnableTutorStudent(cu *user.User) bool {
+	return g.IsCurrentPlayer(cu) && g.Phase == ImperialExamination && !g.CurrentPlayer().PerformedAction
 }

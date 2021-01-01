@@ -8,6 +8,7 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
+	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,16 +17,16 @@ func init() {
 	gob.RegisterName("*game.autoPassEntry", new(autoPassEntry))
 }
 
-func (g *Game) pass(c *gin.Context) (string, game.ActionType, error) {
+func (g *Game) pass(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	if _, err := g.validatePlayerAction(c); err != nil {
+	if _, err := g.validatePlayerAction(c, cu); err != nil {
 		return "", game.None, err
 	}
 
 	cp := g.CurrentPlayer()
-	if err := cp.validatePass(c); err != nil {
+	if err := cp.validatePass(c, cu); err != nil {
 		return "", game.None, err
 	}
 
@@ -84,16 +85,21 @@ func (e *autoPassEntry) HTML() template.HTML {
 	return restful.HTML("System auto passed for %s.", e.Player().Name())
 }
 
-func (p *Player) validatePass(c *gin.Context) (err error) {
-	if _, err = p.Game().validatePlayerAction(c); err == nil && p.hasActionCubes() {
-		err = sn.NewVError("You must use all of your action cubes before passing.")
+func (p *Player) validatePass(c *gin.Context, cu *user.User) error {
+	_, err := p.Game().validatePlayerAction(c, cu)
+	switch {
+	case err != nil:
+		return err
+	case p.hasActionCubes():
+		return sn.NewVError("You must use all of your action cubes before passing.")
+	default:
+		return nil
 	}
-	return
 }
 
-func (g *Game) EnablePass(c *gin.Context) bool {
+func (g *Game) EnablePass(cu *user.User) bool {
 	cp := g.CurrentPlayer()
-	return g.CUserIsCPlayerOrAdmin(c) && cp.canPass()
+	return g.IsCurrentPlayer(cu) && cp.canPass()
 }
 
 func (p *Player) canPass() bool {

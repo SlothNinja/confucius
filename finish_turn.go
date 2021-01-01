@@ -9,6 +9,7 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
+	"github.com/SlothNinja/user"
 	stats "github.com/SlothNinja/user-stats"
 	"github.com/gin-gonic/gin"
 )
@@ -19,29 +20,36 @@ func (client Client) finish(prefix string) gin.HandlerFunc {
 		defer log.Debugf("Exiting")
 
 		g := gameFrom(c)
+
+		cu, err := client.User.Current(c)
+		if err != nil {
+			log.Errorf(err.Error())
+			c.Redirect(http.StatusSeeOther, showPath(c, prefix))
+			return
+		}
+
 		oldCP := g.CurrentPlayer()
 
 		var (
-			s   *stats.Stats
-			cs  contest.Contests
-			err error
+			s  *stats.Stats
+			cs contest.Contests
 		)
 
 		switch g.Phase {
 		case Actions:
-			s, err = g.actionsPhaseFinishTurn(c)
+			s, err = g.actionsPhaseFinishTurn(c, cu)
 		case ImperialFavour:
-			s, cs, err = client.imperialFavourFinishTurn(c, g)
+			s, cs, err = client.imperialFavourFinishTurn(c, g, cu)
 		case ChooseChiefMinister:
-			s, err = g.chooseChiefMinisterPhaseFinishTurn(c)
+			s, err = g.chooseChiefMinisterPhaseFinishTurn(c, cu)
 		case Discard:
-			s, cs, err = client.discardPhaseFinishTurn(c, g)
+			s, cs, err = client.discardPhaseFinishTurn(c, g, cu)
 		case ImperialExamination:
-			s, err = g.tutorStudentsPhaseFinishTurn(c)
+			s, err = g.tutorStudentsPhaseFinishTurn(c, cu)
 		case ExaminationResolution:
-			s, cs, err = client.examinationResolutionFinishTurn(c, g)
+			s, cs, err = client.examinationResolutionFinishTurn(c, g, cu)
 		case MinistryResolution:
-			s, cs, err = client.ministryResolutionFinishTurn(c, g)
+			s, cs, err = client.ministryResolutionFinishTurn(c, g, cu)
 		default:
 			err = sn.NewVError("Improper Phase for finishing turn.")
 		}
@@ -57,22 +65,37 @@ func (client Client) finish(prefix string) gin.HandlerFunc {
 			g.Phase = GameOver
 			g.Status = game.Completed
 			ks, es := wrap(s.GetUpdate(c, g.UpdatedAt), cs)
-			err = client.saveWith(c, g, ks, es)
-			if err == nil {
-				err = g.SendEndGameNotifications(c)
+			err = client.saveWith(c, g, cu, ks, es)
+			if err != nil {
+				log.Errorf(err.Error())
+				c.Redirect(http.StatusSeeOther, showPath(c, prefix))
+				return
 			}
-		} else {
-			s := s.GetUpdate(c, g.UpdatedAt)
-			err = client.saveWith(c, g, []*datastore.Key{s.Key}, []interface{}{s})
-			if err == nil {
-				if newCP := g.CurrentPlayer(); newCP != nil && oldCP.ID() != newCP.ID() {
-					err = g.SendTurnNotificationsTo(c, newCP)
-				}
+
+			err = g.SendEndGameNotifications(c)
+			if err != nil {
+				log.Errorf(err.Error())
 			}
+
+			c.Redirect(http.StatusSeeOther, showPath(c, prefix))
+			return
 		}
 
+		// Game not over
+		s = s.GetUpdate(c, g.UpdatedAt)
+		err = client.saveWith(c, g, cu, []*datastore.Key{s.Key}, []interface{}{s})
 		if err != nil {
 			log.Errorf(err.Error())
+			c.Redirect(http.StatusSeeOther, showPath(c, prefix))
+			return
+		}
+
+		newCP := g.CurrentPlayer()
+		if newCP != nil && oldCP.ID() != newCP.ID() {
+			err = g.SendTurnNotificationsTo(c, newCP)
+			if err != nil {
+				log.Errorf(err.Error())
+			}
 		}
 
 		c.Redirect(http.StatusSeeOther, showPath(c, prefix))
@@ -80,19 +103,21 @@ func (client Client) finish(prefix string) gin.HandlerFunc {
 	}
 }
 
-func (g *Game) validateFinishTurn(c *gin.Context) (s *stats.Stats, err error) {
+func (g *Game) validateFinishTurn(c *gin.Context, cu *user.User) (*stats.Stats, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
 	cp := g.CurrentPlayer()
 
-	switch s = stats.Fetched(c); {
-	case !g.CUserIsCPlayerOrAdmin(c):
-		err = sn.NewVError("Only the current player may finish a turn.")
+	s := stats.Fetched(c)
+	switch {
+	case !g.IsCurrentPlayer(cu):
+		return nil, sn.NewVError("Only the current player may finish a turn.")
 	case !cp.PerformedAction:
-		err = sn.NewVError("%s has yet to perform an action.", g.NameFor(cp))
+		return nil, sn.NewVError("%s has yet to perform an action.", g.NameFor(cp))
+	default:
+		return s, nil
 	}
-	return
 }
 
 // ps is an optional parameter.
@@ -109,9 +134,10 @@ func (p *Player) canAutoPass() bool {
 	return p.canPass() && !p.canTransferInfluence() && !p.canEmperorReward()
 }
 
-func (g *Game) actionsPhaseFinishTurn(c *gin.Context) (s *stats.Stats, err error) {
-	if s, err = g.validateFinishTurn(c); err != nil {
-		return
+func (g *Game) actionsPhaseFinishTurn(c *gin.Context, cu *user.User) (*stats.Stats, error) {
+	s, err := g.validateFinishTurn(c, cu)
+	if err != nil {
+		return nil, err
 	}
 
 	cp := g.CurrentPlayer()
@@ -124,12 +150,14 @@ func (g *Game) actionsPhaseFinishTurn(c *gin.Context) (s *stats.Stats, err error
 	// Reset Extra Action
 	g.ExtraAction = false
 
-	if p := g.actionPhaseNextPlayer(); p != nil {
+	p := g.actionPhaseNextPlayer()
+	if p != nil {
 		g.SetCurrentPlayerers(p)
-	} else {
-		g.imperialFavourPhase(c)
+		return s, nil
 	}
-	return
+
+	g.imperialFavourPhase()
+	return s, nil
 }
 
 func (g *Game) actionPhaseNextPlayer(players ...*Player) *Player {
@@ -151,11 +179,11 @@ func (g *Game) actionPhaseNextPlayer(players ...*Player) *Player {
 	return nil
 }
 
-func (client Client) imperialFavourFinishTurn(c *gin.Context, g *Game) (*stats.Stats, contest.Contests, error) {
+func (client Client) imperialFavourFinishTurn(c *gin.Context, g *Game, cu *user.User) (*stats.Stats, contest.Contests, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	s, err := g.validateFinishTurn(c)
+	s, err := g.validateFinishTurn(c, cu)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -167,8 +195,8 @@ func (client Client) imperialFavourFinishTurn(c *gin.Context, g *Game) (*stats.S
 	cp.ConCardHand.Reveal()
 	cp.EmperorHand.Reveal()
 
-	g.buildWallPhase(c)
-	completed := g.examinationPhase(c)
+	g.buildWallPhase()
+	completed := g.examinationPhase(c, cu)
 	if !completed {
 		return s, nil, nil
 	}
@@ -182,27 +210,28 @@ func (client Client) imperialFavourFinishTurn(c *gin.Context, g *Game) (*stats.S
 	return s, cs, err
 }
 
-func (g *Game) chooseChiefMinisterPhaseFinishTurn(c *gin.Context) (s *stats.Stats, err error) {
+func (g *Game) chooseChiefMinisterPhaseFinishTurn(c *gin.Context, cu *user.User) (*stats.Stats, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	if s, err = g.validateFinishTurn(c); err != nil {
-		return
+	s, err := g.validateFinishTurn(c, cu)
+	if err != nil {
+		return nil, err
 	}
 
-	for _, player := range g.Players() {
-		player.PerformedAction = false
+	for _, p := range g.Players() {
+		p.PerformedAction = false
 	}
 	g.SetCurrentPlayerers(g.nextPlayer(g.ChiefMinister()))
-	g.actionsPhase(c)
-	return
+	g.actionsPhase()
+	return s, nil
 }
 
-func (client Client) examinationResolutionFinishTurn(c *gin.Context, g *Game) (*stats.Stats, contest.Contests, error) {
+func (client Client) examinationResolutionFinishTurn(c *gin.Context, g *Game, cu *user.User) (*stats.Stats, contest.Contests, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	s, err := g.validateFinishTurn(c)
+	s, err := g.validateFinishTurn(c, cu)
 	if err != nil {
 		return nil, nil, err
 	}

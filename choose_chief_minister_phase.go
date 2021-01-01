@@ -9,6 +9,7 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
+	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,7 +17,7 @@ func init() {
 	gob.RegisterName("*game.chooseChiefMinisterEntry", new(chooseChiefMinisterEntry))
 }
 
-func (g *Game) chooseChiefMinisterPhase(c *gin.Context) {
+func (g *Game) chooseChiefMinisterPhase() {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
@@ -26,17 +27,17 @@ func (g *Game) chooseChiefMinisterPhase(c *gin.Context) {
 		g.SetChiefMinister(g.CurrentPlayer())
 		g.ChiefMinister().PlaceCubesIn(ImperialFavourSpace, 1)
 		g.SetCurrentPlayerers(g.nextPlayer())
-		g.actionsPhase(c)
+		g.actionsPhase()
 	} else {
 		g.SetCurrentPlayerers(g.ChiefMinister())
 	}
 }
 
-func (g *Game) chooseChiefMinister(c *gin.Context) (string, game.ActionType, error) {
+func (g *Game) chooseChiefMinister(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	recipient, err := g.validateChooseChiefMinister(c)
+	recipient, err := g.validateChooseChiefMinister(c, cu)
 	if err != nil {
 		return "", game.None, err
 	}
@@ -76,7 +77,7 @@ func (e *chooseChiefMinisterEntry) HTML() template.HTML {
 	return restful.HTML("%s chose %s to be chief minister.", e.Player().Name(), e.OtherPlayer().Name())
 }
 
-func (g *Game) validateChooseChiefMinister(c *gin.Context) (*Player, error) {
+func (g *Game) validateChooseChiefMinister(c *gin.Context, cu *user.User) (*Player, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
@@ -90,7 +91,7 @@ func (g *Game) validateChooseChiefMinister(c *gin.Context) (*Player, error) {
 	switch {
 	case recipient == nil:
 		return nil, sn.NewVError("Recipient not found.")
-	case !g.CUserIsCPlayerOrAdmin(c):
+	case !g.IsCurrentPlayer(cu):
 		return nil, sn.NewVError("Only the current player may choose a chief minister.")
 	case g.Phase != ChooseChiefMinister:
 		return nil, sn.NewVError("You cannot choose a chief minister during the %s phase.", g.Phase)
@@ -102,6 +103,6 @@ func (g *Game) validateChooseChiefMinister(c *gin.Context) (*Player, error) {
 	return recipient, nil
 }
 
-func (g *Game) EnableChooseChiefMinister(c *gin.Context) bool {
-	return g.CUserIsCPlayerOrAdmin(c) && g.Phase == ChooseChiefMinister
+func (g *Game) EnableChooseChiefMinister(cu *user.User) bool {
+	return g.IsCurrentPlayer(cu) && g.Phase == ChooseChiefMinister
 }

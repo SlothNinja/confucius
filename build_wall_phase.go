@@ -2,10 +2,9 @@ package confucius
 
 import (
 	"github.com/SlothNinja/log"
-	"github.com/gin-gonic/gin"
 )
 
-func (g *Game) buildWallPhase(c *gin.Context) {
+func (g *Game) buildWallPhase() {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 

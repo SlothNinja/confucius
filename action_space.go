@@ -41,20 +41,20 @@ var spaceIDStrings = map[SpaceID]string{
 	ImperialFavourSpace: "ImperialFavourSpace",
 }
 
-func (this SpaceID) String() string {
-	return spaceIDStrings[this]
+func (id SpaceID) String() string {
+	return spaceIDStrings[id]
 }
 
-func (this SpaceID) Int() int {
-	return int(this)
+func (id SpaceID) Int() int {
+	return int(id)
 }
 
-func (this *ActionSpace) Name() string {
-	return this.ID.String()
+func (space *ActionSpace) Name() string {
+	return space.ID.String()
 }
 
-func (this *Player) CubesIn(space *ActionSpace) int {
-	return space.Cubes[this.ID()]
+func (p *Player) CubesIn(space *ActionSpace) int {
+	return space.Cubes[p.ID()]
 }
 
 func (p *Player) PlaceCubesIn(id SpaceID, cubes int) {

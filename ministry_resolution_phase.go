@@ -7,6 +7,7 @@ import (
 	"github.com/SlothNinja/contest"
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
+	"github.com/SlothNinja/user"
 	stats "github.com/SlothNinja/user-stats"
 	"github.com/gin-gonic/gin"
 )
@@ -41,7 +42,7 @@ func (g *Game) ministryInProgress() *Ministry {
 	return nil
 }
 
-func (g *Game) initMinistryResolution(c *gin.Context, m *Ministry) (resolved bool) {
+func (g *Game) initMinistryResolution(c *gin.Context, m *Ministry) bool {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
@@ -53,17 +54,17 @@ func (g *Game) initMinistryResolution(c *gin.Context, m *Ministry) (resolved boo
 	return g.resolve(c, m)
 }
 
-func (g *Game) playerCountsIn(m *Ministry) (cnts map[int]int) {
-	cnts = make(map[int]int)
+func (g *Game) playerCountsIn(m *Ministry) map[int]int {
+	counts := make(map[int]int)
 	for _, o := range m.Officials {
 		if o.TempPlayer() != nil {
-			cnts[o.TempPlayer().ID()] += 1
+			counts[o.TempPlayer().ID()] += 1
 		}
 	}
-	return
+	return counts
 }
 
-func (g *Game) resolve(c *gin.Context, m *Ministry) (resolved bool) {
+func (g *Game) resolve(c *gin.Context, m *Ministry) bool {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
@@ -77,9 +78,9 @@ func (g *Game) resolve(c *gin.Context, m *Ministry) (resolved bool) {
 			log.Debugf("to: %#v", to)
 			log.Debugf("ministry: %#v", m)
 			log.Debugf("playerCounts: %#v", playerCounts)
-			return
+			return false
 		}
-		g.autoTempTransferInfluence(c, from, to[0])
+		g.autoTempTransferInfluence(from, to[0])
 	}
 
 	ministerID, secretaryID := NoPlayerID, NoPlayerID
@@ -148,9 +149,8 @@ func (g *Game) resolve(c *gin.Context, m *Ministry) (resolved bool) {
 	m.setSecretary(secretary)
 	m.Resolved = true
 	m.InProgress = false
-	resolved = true
 
-	return
+	return true
 }
 
 type resolvedMinistryEntry struct {
@@ -219,11 +219,11 @@ func (m *Ministry) playerToTempTransfer(playerCounts map[int]int) *Player {
 	return nil
 }
 
-func (client Client) ministryResolutionFinishTurn(c *gin.Context, g *Game) (*stats.Stats, contest.Contests, error) {
+func (client Client) ministryResolutionFinishTurn(c *gin.Context, g *Game, cu *user.User) (*stats.Stats, contest.Contests, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	s, err := g.validateFinishTurn(c)
+	s, err := g.validateFinishTurn(c, cu)
 	if err != nil {
 		return nil, nil, err
 	}

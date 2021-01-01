@@ -8,6 +8,7 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
+	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,12 +16,12 @@ func init() {
 	gob.RegisterName("*game.giveGiftEntry", new(giveGiftEntry))
 }
 
-func (g *Game) giveGift(c *gin.Context) (string, game.ActionType, error) {
+func (g *Game) giveGift(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
 	// Get Recipient and Gift
-	recipient, gift, cubes, err := g.validateGiveGift(c)
+	recipient, gift, cubes, err := g.validateGiveGift(c, cu)
 	if err != nil {
 		return "", game.None, err
 	}
@@ -70,11 +71,11 @@ func (e *giveGiftEntry) HTML() template.HTML {
 		e.Player().Name(), e.Gift.Value, e.Gift.Name(), e.OtherPlayer().Name(), e.OtherPlayer().Name())
 }
 
-func (g *Game) validateGiveGift(c *gin.Context) (*Player, *GiftCard, int, error) {
+func (g *Game) validateGiveGift(c *gin.Context, cu *user.User) (*Player, *GiftCard, int, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	cubes, err := g.validatePlayerAction(c)
+	cubes, err := g.validatePlayerAction(c, cu)
 	if err != nil {
 		return nil, nil, 0, err
 	}
@@ -109,8 +110,8 @@ func (g *Game) validateGiveGift(c *gin.Context) (*Player, *GiftCard, int, error)
 	return recipient, givenGift, cubes, nil
 }
 
-func (g *Game) EnableGiveGift(c *gin.Context) bool {
+func (g *Game) EnableGiveGift(cu *user.User) bool {
 	cp := g.CurrentPlayer()
 	requiredCubes := cp.RequiredCubesFor(GiveGiftSpace)
-	return g.CUserIsCPlayerOrAdmin(c) && cp.ActionCubes >= requiredCubes && len(cp.GiftsBought) >= 1
+	return g.IsCurrentPlayer(cu) && cp.ActionCubes >= requiredCubes && len(cp.GiftsBought) >= 1
 }

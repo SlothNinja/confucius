@@ -72,7 +72,7 @@ func (client Client) AfterCache(c *gin.Context, g *Game) error {
 	return client.init(c, g)
 }
 
-func (g *Game) fromForm(c *gin.Context) error {
+func (g *Game) fromForm(c *gin.Context, cu *user.User) error {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
@@ -98,10 +98,6 @@ func (g *Game) fromForm(c *gin.Context) error {
 	// 	g.BasicGame = s.BasicGame
 	// 	g.AdmiralVariant = s.AdmiralVariant
 	// }
-	cu, err := user.CurrentFrom(c)
-	if err != nil {
-		log.Debugf(err.Error())
-	}
 
 	g.Title = cu.Name + "'s Game"
 	if obj.Title != "" {

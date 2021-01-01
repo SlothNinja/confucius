@@ -228,14 +228,14 @@ func (g *Game) beginningOfPhaseReset() {
 	}
 }
 
-func NewPlayer() (player *Player) {
-	player = new(Player)
-	player.Player = game.NewPlayer()
-	return
+func NewPlayer() *Player {
+	p := new(Player)
+	p.Player = game.NewPlayer()
+	return p
 }
 
-func CreatePlayer(g *Game, u *user.User) (p *Player) {
-	p = NewPlayer()
+func CreatePlayer(g *Game, u *user.User) *Player {
+	p := NewPlayer()
 	p.SetID(int(len(g.Players())))
 	p.SetGame(g)
 
@@ -257,7 +257,7 @@ func CreatePlayer(g *Game, u *user.User) (p *Player) {
 	p.NewGiftCardHand()
 	p.NewGiftsBought()
 	p.Armies = 6
-	return
+	return p
 }
 
 func (p *Player) NewGiftCardHand() {
@@ -300,38 +300,38 @@ func (p *Player) DisplayTempBarrel() template.HTML {
 	return template.HTML(result)
 }
 
-func (p *Player) DisplayArmies() (image string) {
+func (p *Player) DisplayArmies() string {
+	s := ""
 	for i := 0; i < p.Armies; i++ {
-		image += fmt.Sprintf("<img src=\"/images/confucius/%s-army-shadowed.png\" alt=\"%s Army\"/>", p.Color(), p.Color())
+		s += fmt.Sprintf("<img src=\"/images/confucius/%s-army-shadowed.png\" alt=\"%s Army\"/>", p.Color(), p.Color())
 	}
-	return image
+	return s
 }
 
-func (ps Players) Users() (us user.Users) {
-	for _, player := range ps {
-		us = append(us, player.User())
+func (ps Players) Users() user.Users {
+	us := make(user.Users, len(ps))
+	for i, player := range ps {
+		us[i] = player.User()
 	}
 	return us
 }
 
-func (ps Players) Include(p *Player) (result bool) {
+func (ps Players) Include(p *Player) bool {
 	for _, player := range ps {
 		if player.Equal(p) {
-			result = true
-			break
+			return true
 		}
 	}
-	return
+	return false
 }
 
-func (ps Players) IncludeUser(u *user.User) (result bool) {
+func (ps Players) IncludeUser(u *user.User) bool {
 	for _, p := range ps {
 		if p.User().Equal(u) {
-			result = true
-			break
+			return true
 		}
 	}
-	return
+	return false
 }
 
 func (ps Players) allPassed() bool {
@@ -352,13 +352,14 @@ func (ps Players) allPerformedAction() bool {
 	return true
 }
 
-func (p *Player) CardCount(v int) (count int) {
+func (p *Player) CardCount(v int) int {
+	count := 0
 	for _, c := range p.ConCardHand {
 		if c.Coins == v {
 			count += 1
 		}
 	}
-	return
+	return count
 }
 
 func (p *Player) clearActions() {
@@ -367,11 +368,11 @@ func (p *Player) clearActions() {
 	p.Log = make(game.GameLog, 0)
 }
 
-func (p *Player) HubuDiscount() (discount int) {
+func (p *Player) HubuDiscount() int {
 	if p.HasInfluenceIn(p.Game().Ministries[Hubu]) {
-		discount = 1
+		return 1
 	}
-	return
+	return 0
 }
 
 func (p *Player) junkCostFor(j int) int {
@@ -416,34 +417,31 @@ func (p *Player) GiftsGiven() int {
 	return count
 }
 
-func (p *Player) GetGift(v GiftCardValue) (gift *GiftCard) {
+func (p *Player) GetGift(v GiftCardValue) *GiftCard {
 	for _, g := range p.GiftCardHand {
 		if g.Value == v {
-			gift = g
-			break
+			return g
 		}
 	}
-	return
+	return nil
 }
 
-func (p *Player) GetBoughtGift(v GiftCardValue) (gift *GiftCard) {
+func (p *Player) GetBoughtGift(v GiftCardValue) *GiftCard {
 	for _, g := range p.GiftsBought {
 		if g.Value == v {
-			gift = g
-			break
+			return g
 		}
 	}
-	return
+	return nil
 }
 
-func (p *Player) GetEmperorCard(v EmperorCardType) (card *EmperorCard) {
+func (p *Player) GetEmperorCard(v EmperorCardType) *EmperorCard {
 	for _, c := range p.EmperorHand {
 		if c.Type == v {
-			card = c
-			break
+			return c
 		}
 	}
-	return
+	return nil
 }
 
 func (p *Player) cancelGiftFrom(player *Player) *GiftCard {
@@ -481,13 +479,14 @@ func (p *Player) NotEqual(op *Player) bool {
 	return !p.Equal(op)
 }
 
-func (p *Player) influenceIn(m *Ministry) (cnt int) {
+func (p *Player) influenceIn(m *Ministry) int {
+	count := 0
 	for _, t := range m.Officials {
 		if t.PlayerID != NoPlayerID && t.PlayerID == p.ID() {
-			cnt += 1
+			count += 1
 		}
 	}
-	return
+	return count
 }
 
 func (p *Player) CostFor(tile *OfficialTile) int {

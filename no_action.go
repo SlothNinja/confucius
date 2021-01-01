@@ -7,6 +7,7 @@ import (
 	"github.com/SlothNinja/game"
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
+	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,11 +15,11 @@ func init() {
 	gob.RegisterName("*game.noActionEntry", new(noActionEntry))
 }
 
-func (g *Game) noAction(c *gin.Context) (string, game.ActionType, error) {
+func (g *Game) noAction(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	cubes, err := g.validatePlayerAction(c)
+	cubes, err := g.validatePlayerAction(c, cu)
 	if err != nil {
 		return "", game.None, err
 	}
@@ -54,10 +55,10 @@ func (g *noActionEntry) HTML() template.HTML {
 	return restful.HTML("%s performed no action.", g.Player().Name())
 }
 
-func (g *Game) EnableNoAction(c *gin.Context) bool {
+func (g *Game) EnableNoAction(cu *user.User) bool {
 	cp := g.CurrentPlayer()
 	return g.inActionsOrImperialFavourPhase() && g.CurrentPlayer() != nil &&
-		!cp.PerformedAction && g.CUserIsCPlayerOrAdmin(c) &&
+		!cp.PerformedAction && g.IsCurrentPlayer(cu) &&
 		cp.hasEnoughCubesFor(NoActionSpace) && cp.hasActionCubes()
 }
 

@@ -22,32 +22,32 @@ type ForeignLandBox struct {
 }
 type ForeignLandBoxes []*ForeignLandBox
 
-func (this *ForeignLandBox) Game() *Game {
-	return this.land.Game()
+func (box *ForeignLandBox) Game() *Game {
+	return box.land.Game()
 }
 
-func (this *ForeignLandBox) Player() (player *Player) {
-	if this.Invaded() {
-		player = this.Game().PlayerByID(this.PlayerID)
+func (box *ForeignLandBox) Player() *Player {
+	if box.Invaded() {
+		return box.Game().PlayerByID(box.PlayerID)
 	}
-	return
+	return nil
 }
 
-func (this *ForeignLandBox) setPlayer(player *Player) {
+func (box *ForeignLandBox) setPlayer(p *Player) {
 	switch {
-	case player == nil:
-		this.PlayerID = NoPlayerID
+	case p == nil:
+		box.PlayerID = NoPlayerID
 	default:
-		this.PlayerID = player.ID()
+		box.PlayerID = p.ID()
 	}
 }
 
-func (this *ForeignLandBox) Invaded() bool {
-	return this.PlayerID != NoPlayerID
+func (box *ForeignLandBox) Invaded() bool {
+	return box.PlayerID != NoPlayerID
 }
 
-func (this *ForeignLandBox) NotInvaded() bool {
-	return !this.Invaded()
+func (box *ForeignLandBox) NotInvaded() bool {
+	return !box.Invaded()
 }
 
 type ForeignLand struct {
@@ -57,23 +57,23 @@ type ForeignLand struct {
 	Resolved bool
 }
 
-func (this *ForeignLand) init(game *Game) {
-	this.game = game
-	for _, box := range this.Boxes {
-		box.land = this
+func (l *ForeignLand) init(game *Game) {
+	l.game = game
+	for _, box := range l.Boxes {
+		box.land = l
 	}
 }
 
-func (this *ForeignLand) Game() *Game {
-	return this.game
+func (l *ForeignLand) Game() *Game {
+	return l.game
 }
 
-func (this *ForeignLand) Name() string {
-	return this.ID.String()
+func (l *ForeignLand) Name() string {
+	return l.ID.String()
 }
 
-func (this *ForeignLand) Box(index int) *ForeignLandBox {
-	return this.Boxes[index]
+func (l *ForeignLand) Box(index int) *ForeignLandBox {
+	return l.Boxes[index]
 }
 
 type ForeignLands []*ForeignLand
@@ -91,45 +91,51 @@ var foreignLandIDS = []ForeignLandID{Annam, Yunnan, Mongolia, Korea, Manchuria}
 var foreignLandIDStrings = map[ForeignLandID]string{Annam: "Annam", Yunnan: "Yunnan", Mongolia: "Mongolia", Korea: "Korea", Manchuria: "Manchuria"}
 var foreignLandIDCost = map[ForeignLandID]int{Annam: 8, Yunnan: 4, Mongolia: 6, Korea: 7, Manchuria: 5}
 
-func (this ForeignLandID) String() string {
-	return foreignLandIDStrings[this]
+func (lid ForeignLandID) String() string {
+	return foreignLandIDStrings[lid]
 }
 
-func (this *ForeignLand) Cost() int {
-	return foreignLandIDCost[this.ID]
+func (l *ForeignLand) Cost() int {
+	return foreignLandIDCost[l.ID]
 }
 
-func (this ForeignLandID) CreateBoxes(land *ForeignLand) (boxes ForeignLandBoxes) {
-	switch this {
+func (lid ForeignLandID) CreateBoxes(land *ForeignLand) ForeignLandBoxes {
+	switch lid {
 	case Annam:
-		boxes = make(ForeignLandBoxes, 2)
+		boxes := make(ForeignLandBoxes, 2)
 		boxes[0] = &ForeignLandBox{land: land, Position: 0, PlayerID: NoPlayerID, Points: 4, AwardCard: false}
 		boxes[1] = &ForeignLandBox{land: land, Position: 1, PlayerID: NoPlayerID, Points: 3, AwardCard: true}
+		return boxes
 	case Yunnan:
-		boxes = make(ForeignLandBoxes, 2)
+		boxes := make(ForeignLandBoxes, 2)
 		boxes[0] = &ForeignLandBox{land: land, Position: 0, PlayerID: NoPlayerID, Points: 4, AwardCard: false}
 		boxes[1] = &ForeignLandBox{land: land, Position: 1, PlayerID: NoPlayerID, Points: 2, AwardCard: true}
+		return boxes
 	case Mongolia:
-		boxes = make(ForeignLandBoxes, 3)
+		boxes := make(ForeignLandBoxes, 3)
 		boxes[0] = &ForeignLandBox{land: land, Position: 0, PlayerID: NoPlayerID, Points: 3, AwardCard: true}
 		boxes[1] = &ForeignLandBox{land: land, Position: 1, PlayerID: NoPlayerID, Points: 2, AwardCard: false}
 		boxes[2] = &ForeignLandBox{land: land, Position: 3, PlayerID: NoPlayerID, Points: 4, AwardCard: false}
+		return boxes
 	case Korea:
-		boxes = make(ForeignLandBoxes, 3)
+		boxes := make(ForeignLandBoxes, 3)
 		boxes[0] = &ForeignLandBox{land: land, Position: 0, PlayerID: NoPlayerID, Points: 4, AwardCard: false}
 		boxes[1] = &ForeignLandBox{land: land, Position: 1, PlayerID: NoPlayerID, Points: 3, AwardCard: true}
 		boxes[2] = &ForeignLandBox{land: land, Position: 2, PlayerID: NoPlayerID, Points: 4, AwardCard: false}
+		return boxes
 	case Manchuria:
-		boxes = make(ForeignLandBoxes, 4)
+		boxes := make(ForeignLandBoxes, 4)
 		boxes[0] = &ForeignLandBox{land: land, Position: 0, PlayerID: NoPlayerID, Points: 3, AwardCard: false}
 		boxes[1] = &ForeignLandBox{land: land, Position: 1, PlayerID: NoPlayerID, Points: 2, AwardCard: false}
 		boxes[2] = &ForeignLandBox{land: land, Position: 2, PlayerID: NoPlayerID, Points: 5, AwardCard: false}
 		boxes[3] = &ForeignLandBox{land: land, Position: 3, PlayerID: NoPlayerID, Points: 3, AwardCard: true}
+		return boxes
+	default:
+		return nil
 	}
-	return
 }
 
-func (this *Game) CreateForeignLands() {
+func (g *Game) CreateForeignLands() {
 	// Create Foreign Lands
 	lands := make(ForeignLands, len(foreignLandIDS))
 	for i, id := range foreignLandIDS {
@@ -146,20 +152,18 @@ func (this *Game) CreateForeignLands() {
 		selectedLands[i] = lands[index]
 		lands = append(lands[:index], lands[index+1:]...)
 	}
-	this.ForeignLands = selectedLands
+	g.ForeignLands = selectedLands
 }
 
-func (this *ForeignLand) LString() string {
-	return strings.ToLower(this.Name())
+func (l *ForeignLand) LString() string {
+	return strings.ToLower(l.Name())
 }
 
-func (this *ForeignLand) AllBoxesOccupied() (result bool) {
-	result = true
-	for _, box := range this.Boxes {
+func (l *ForeignLand) AllBoxesOccupied() bool {
+	for _, box := range l.Boxes {
 		if box.NotInvaded() {
-			result = false
-			break
+			return false
 		}
 	}
-	return
+	return true
 }

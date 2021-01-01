@@ -8,6 +8,7 @@ import (
 
 	"github.com/SlothNinja/game"
 	"github.com/SlothNinja/log"
+	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,7 +20,7 @@ func (g *Game) invokeInvadePhase(c *gin.Context) (string, game.ActionType, error
 	return "", game.Cache, nil
 }
 
-func (g *Game) adminHeader(c *gin.Context) (tmpl string, act game.ActionType, err error) {
+func (g *Game) adminHeader(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
@@ -49,7 +50,7 @@ func (g *Game) adminHeader(c *gin.Context) (tmpl string, act game.ActionType, er
 		UpdatedAt     time.Time        `form:"updated-at"`
 	}{}
 
-	err = c.ShouldBind(&h)
+	err := c.ShouldBind(&h)
 	if err != nil {
 		return "", game.None, err
 	}
@@ -102,8 +103,7 @@ func (g *Game) adminHeader(c *gin.Context) (tmpl string, act game.ActionType, er
 	g.GeneralID = s.GeneralID
 	g.Wall = s.Wall
 
-	act = game.Save
-	return
+	return "", game.Save, nil
 }
 
 //func (g *Game) adminState(ctx context.Context) (string, game.ActionType, error) {
@@ -320,7 +320,7 @@ func (g *Game) adminHeader(c *gin.Context) (tmpl string, act game.ActionType, er
 //	return "", game.Save, nil
 //}
 
-func (g *Game) adminPlayer(c *gin.Context) (tmpl string, act game.ActionType, err error) {
+func (g *Game) adminPlayer(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	pid, err := strconv.Atoi(c.PostForm("pid"))
 	if err != nil {
 		return "", game.None, err

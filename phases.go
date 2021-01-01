@@ -70,7 +70,6 @@ var PhaseNames = game.PhaseNameMap{
 	AwaitPlayerInput:        "Awaiting Player Input",
 }
 
-func (g *Game) PhaseName() (n string) {
-	n, _ = PhaseNames[g.Phase]
-	return
+func (g *Game) PhaseName() string {
+	return PhaseNames[g.Phase]
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
+	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,12 +16,12 @@ func init() {
 	gob.RegisterName("*game.invadeLandEntry", new(invadeLandEntry))
 }
 
-func (g *Game) invadeLand(c *gin.Context) (string, game.ActionType, error) {
+func (g *Game) invadeLand(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
 	// Get Indices and Cards
-	box, cards, cubes, err := g.validateInvadeLand(c)
+	box, cards, cubes, err := g.validateInvadeLand(c, cu)
 	if err != nil {
 		return "", game.None, err
 	}
@@ -71,11 +72,11 @@ func (e *invadeLandEntry) HTML() template.HTML {
 		e.Player().Name(), len(e.Played), e.Played.Coins(), e.Points, e.ForeignLandName)
 }
 
-func (g *Game) validateInvadeLand(c *gin.Context) (*ForeignLandBox, ConCards, int, error) {
+func (g *Game) validateInvadeLand(c *gin.Context, cu *user.User) (*ForeignLandBox, ConCards, int, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	cubes, err := g.validatePlayerAction(c)
+	cubes, err := g.validatePlayerAction(c, cu)
 	if err != nil {
 		return nil, nil, 0, err
 	}
@@ -105,10 +106,10 @@ func (g *Game) validateInvadeLand(c *gin.Context) (*ForeignLandBox, ConCards, in
 	return box, cards, cubes, nil
 }
 
-func (g *Game) EnableInvadeLand(c *gin.Context) (result bool) {
+func (g *Game) EnableInvadeLand(cu *user.User) bool {
 	cp := g.CurrentPlayer()
 	return g.inActionsOrImperialFavourPhase() && g.CurrentPlayer() != nil &&
-		!cp.PerformedAction && g.CUserIsCPlayerOrAdmin(c) &&
+		!cp.PerformedAction && g.IsCurrentPlayer(cu) &&
 		cp.hasEnoughCubesFor(RecruitArmySpace) && cp.hasRecruitedArmies() && cp.canAffordInvasion()
 }
 

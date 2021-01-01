@@ -18,12 +18,12 @@ const (
 	Junk
 )
 
-func (this GiftCardValue) Int() int {
-	return int(this)
+func (cd GiftCardValue) Int() int {
+	return int(cd)
 }
 
-func (this GiftCardValue) String() string {
-	return giftCardStrings[this]
+func (cd GiftCardValue) String() string {
+	return giftCardStrings[cd]
 }
 
 var giftCardValues = []GiftCardValue{Hanging, Tile, Vase, Coat, Necklace, Junk}
@@ -36,7 +36,7 @@ var giftCardStrings = map[GiftCardValue]string{
 	Junk:     "Junk",
 }
 
-func (this *Game) GiftCardValues() []GiftCardValue {
+func (g *Game) GiftCardValues() []GiftCardValue {
 	return giftCardValues
 }
 
@@ -51,100 +51,100 @@ type GiftCard struct {
 }
 type GiftCards []*GiftCard
 
-func (this *GiftCard) Game() *Game {
-	return this.game
+func (cd *GiftCard) Game() *Game {
+	return cd.game
 }
 
-func (this *GiftCard) SetGame(game *Game) {
-	this.game = game
+func (cd *GiftCard) SetGame(game *Game) {
+	cd.game = game
 }
 
-func (this *GiftCard) Cost() int {
-	return this.Value.Int()
+func (cd *GiftCard) Cost() int {
+	return cd.Value.Int()
 }
 
-func (this *GiftCard) Player() (player *Player) {
-	if this.PlayerID != NoPlayerID {
-		player = this.Game().PlayerByID(this.PlayerID)
+func (cd *GiftCard) Player() *Player {
+	if cd.PlayerID != NoPlayerID {
+		return cd.Game().PlayerByID(cd.PlayerID)
 	}
-	return
+	return nil
 }
 
-func (this *GiftCard) setPlayer(player *Player) {
+func (cd *GiftCard) setPlayer(p *Player) {
 	switch {
-	case player == nil:
-		this.PlayerID = NoPlayerID
+	case p == nil:
+		cd.PlayerID = NoPlayerID
 	default:
-		this.PlayerID = player.ID()
+		cd.PlayerID = p.ID()
 	}
 }
 
-func (c *GiftCard) isFrom(p *Player) bool {
-        return c.Player().Equal(p)
+func (cd *GiftCard) isFrom(p *Player) bool {
+	return cd.Player().Equal(p)
 }
 
-func (this *GiftCard) Name() string {
-	return giftCardStrings[this.Value]
+func (cd *GiftCard) Name() string {
+	return giftCardStrings[cd.Value]
 }
 
-func (c *GiftCard) Equal(card *GiftCard) bool {
-	return c != nil && card != nil && c.Value == card.Value && c.Player().Equal(card.Player())
+func (cd *GiftCard) Equal(card *GiftCard) bool {
+	return cd != nil && card != nil && cd.Value == card.Value && cd.Player().Equal(card.Player())
 }
 
-func (this *GiftCards) Append(cards ...*GiftCard) {
-	*this = this.AppendS(cards...)
+func (cds *GiftCards) Append(cards ...*GiftCard) {
+	*cds = cds.AppendS(cards...)
 }
 
-func (this GiftCards) AppendS(cards ...*GiftCard) (gs GiftCards) {
-	gs = append(this, cards...)
-	return
+func (cds GiftCards) AppendS(cards ...*GiftCard) GiftCards {
+	return append(cds, cards...)
 }
 
-func (cs *GiftCards) Remove(cards ...*GiftCard) {
-	*cs = cs.removeMulti(cards...)
+func (cds *GiftCards) Remove(cards ...*GiftCard) {
+	*cds = cds.removeMulti(cards...)
 }
 
-func (cs GiftCards) removeMulti(cards ...*GiftCard) GiftCards {
-        gcs := cs
+func (cds GiftCards) removeMulti(cards ...*GiftCard) GiftCards {
+	gcs := cds
 	for _, c := range cards {
 		gcs = gcs.remove(c)
 	}
 	return gcs
 }
 
-func (cs GiftCards) remove(card *GiftCard) GiftCards {
-        cards := cs
-	for i, c := range cs {
+func (cds GiftCards) remove(card *GiftCard) GiftCards {
+	cards := cds
+	for i, c := range cds {
 		if c.Equal(card) {
 			return cards.removeAt(i)
 		}
 	}
-	return cs
+	return cds
 }
 
-func (cs GiftCards) removeAt(i int) GiftCards {
-	return append(cs[:i], cs[i+1:]...)
+func (cds GiftCards) removeAt(i int) GiftCards {
+	return append(cds[:i], cds[i+1:]...)
 }
 
-func (cs GiftCards) include(card *GiftCard) bool {
-        for _, c := range cs {
-                if c.Equal(card) {
-                        return true
-                }
-        }
-        return false
+func (cds GiftCards) include(card *GiftCard) bool {
+	for _, c := range cds {
+		if c.Equal(card) {
+			return true
+		}
+	}
+	return false
 }
 
 func (g *Game) GiftCardNames() []string {
-        var ss []string
+	var ss []string
 	for _, v := range giftCardValues {
 		ss = append(ss, giftCardStrings[v])
 	}
 	return ss
 }
 
-func (this GiftCards) OfValue(v GiftCardValue) (cards GiftCards) {
-	for _, card := range this {
+func (cds GiftCards) OfValue(v GiftCardValue) GiftCards {
+	var cards GiftCards
+	for _, card := range cds {
 		if card.Value == v {
 			cards = append(cards, card)
 		}

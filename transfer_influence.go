@@ -8,6 +8,7 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
+	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,11 +16,11 @@ func init() {
 	gob.RegisterName("*game.transferInfluenceEntry", new(transferInfluenceEntry))
 }
 
-func (g *Game) transferInfluence(c *gin.Context) (string, game.ActionType, error) {
+func (g *Game) transferInfluence(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	ministry, official, player, err := g.validateTransferInfluence(c)
+	ministry, official, player, err := g.validateTransferInfluence(c, cu)
 	if err != nil {
 		return "", game.None, err
 	}
@@ -66,8 +67,8 @@ func (e *transferInfluenceEntry) HTML() template.HTML {
 	return restful.HTML("%s transferred influence on %s official with level %d seniority to %s.", e.Player().Name(), e.MinistryName, e.Seniority, e.OtherPlayer().Name())
 }
 
-func (g *Game) validateTransferInfluence(c *gin.Context) (*Ministry, *OfficialTile, *Player, error) {
-	if _, err := g.validatePlayerAction(c); err != nil {
+func (g *Game) validateTransferInfluence(c *gin.Context, cu *user.User) (*Ministry, *OfficialTile, *Player, error) {
+	if _, err := g.validatePlayerAction(c, cu); err != nil {
 		return nil, nil, nil, err
 	}
 
@@ -94,9 +95,9 @@ func (g *Game) validateTransferInfluence(c *gin.Context) (*Ministry, *OfficialTi
 	return ministry, official, player, nil
 }
 
-func (g *Game) EnableTransferInfluence(c *gin.Context) bool {
+func (g *Game) EnableTransferInfluence(cu *user.User) bool {
 	cp := g.CurrentPlayer()
-	return g.CUserIsCPlayerOrAdmin(c) && cp.canTransferInfluence()
+	return g.IsCurrentPlayer(cu) && cp.canTransferInfluence()
 }
 
 func (p *Player) canTransferInfluence() bool {

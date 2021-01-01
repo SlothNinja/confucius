@@ -10,6 +10,7 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
+	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,18 +18,14 @@ func init() {
 	gob.RegisterName("*game.buyJunksEntry", new(buyJunksEntry))
 }
 
-func (g *Game) buyJunks(c *gin.Context) (tmpl string, a game.ActionType, err error) {
+func (g *Game) buyJunks(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	var (
-		js, cbs int
-		cds     ConCards
-	)
-
 	// Get Junks and Cards
-	if js, cds, cbs, err = g.validateBuyJunks(c); err != nil {
-		return
+	js, cds, cbs, err := g.validateBuyJunks(c, cu)
+	if err != nil {
+		return "", game.None, err
 	}
 
 	cp := g.CurrentPlayer()
@@ -77,21 +74,23 @@ func (e *buyJunksEntry) HTML() template.HTML {
 		e.Player().Name(), length, pluralize("card", length), coins, pluralize("coin", coins), e.Junks, pluralize("junk", e.Junks))
 }
 
-func (g *Game) validateBuyJunks(c *gin.Context) (js int, cds ConCards, cbs int, err error) {
+func (g *Game) validateBuyJunks(c *gin.Context, cu *user.User) (int, ConCards, int, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	if cbs, err = g.validatePlayerAction(c); err != nil {
-		return
+	cbs, err := g.validatePlayerAction(c, cu)
+	if err != nil {
+		return 0, nil, 0, err
 	}
 
-	if cds, err = g.getConCards(c, "buy-junks"); err != nil {
-		return
+	cds, err := g.getConCards(c, "buy-junks")
+	if err != nil {
+		return 0, nil, 0, err
 	}
 
-	if js, err = strconv.Atoi(c.PostForm("junks")); err != nil {
-		err = fmt.Errorf(`Form value for "junks" is invalid.`)
-		return
+	js, err := strconv.Atoi(c.PostForm("junks"))
+	if err != nil {
+		return 0, nil, 0, fmt.Errorf(`Form value for "junks" is invalid.`)
 	}
 
 	cp := g.CurrentPlayer()
@@ -100,15 +99,16 @@ func (g *Game) validateBuyJunks(c *gin.Context) (js int, cds ConCards, cbs int, 
 
 	switch {
 	case cv < cost:
-		err = sn.NewVError("You selected cards having %d total coins, but you need %d coins to buy the selected junks.", cv, cost)
+		return 0, nil, 0, sn.NewVError("You selected cards having %d total coins, but you need %d coins to buy the selected junks.", cv, cost)
 	case js > g.Junks:
-		err = sn.NewVError("You selected more junks than there are available in stock.")
+		return 0, nil, 0, sn.NewVError("You selected more junks than there are available in stock.")
+	default:
+		return js, cds, cbs, err
 	}
-	return
 }
 
-func (g *Game) EnableBuyJunks(c *gin.Context) bool {
-	return g.CUserIsCPlayerOrAdmin(c) && g.CurrentPlayer().canBuyJunks()
+func (g *Game) EnableBuyJunks(cu *user.User) bool {
+	return g.IsCurrentPlayer(cu) && g.CurrentPlayer().canBuyJunks()
 }
 
 func (p *Player) canBuyJunks() bool {

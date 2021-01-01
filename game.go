@@ -199,7 +199,7 @@ func (g *Game) Start(c *gin.Context) error {
 	g.CreateDistantLands()
 	g.CreateForeignLands()
 	g.CreateCandidates()
-	g.start(c)
+	g.start()
 	return nil
 }
 
@@ -212,11 +212,11 @@ func (g *Game) ColorMap() color.Colors {
 	return color.Colors{color.Yellow, color.Purple, color.Green, color.White, color.Black}
 }
 
-func (g *Game) start(c *gin.Context) {
+func (g *Game) start() {
 	g.Phase = StartGame
 	g.Round = 1
-	g.countGiftsPhase(c)
-	g.chooseChiefMinisterPhase(c)
+	g.countGiftsPhase()
+	g.chooseChiefMinisterPhase()
 }
 
 func (g *Game) Players() Players {
@@ -241,7 +241,7 @@ func (g *Game) setPlayers(players Players) {
 	}
 }
 
-func (g *Game) actionsPhase(c *gin.Context) {
+func (g *Game) actionsPhase() {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
@@ -252,10 +252,10 @@ func (g *Game) inActionsOrImperialFavourPhase() bool {
 	return g.Phase == Actions || g.Phase == ImperialFavour
 }
 
-func (g *Game) resetTurn(c *gin.Context) (string, game.ActionType, error) {
+func (g *Game) resetTurn(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	cp := g.CurrentPlayer()
 
-	if !g.CUserIsCPlayerOrAdmin(c) {
+	if !g.IsCurrentPlayer(cu) {
 		return "", game.None, sn.NewVError("Only the current player may perform this action.")
 	}
 	restful.AddNoticef(c, "%s reset turn.", g.NameFor(cp))
@@ -263,7 +263,8 @@ func (g *Game) resetTurn(c *gin.Context) (string, game.ActionType, error) {
 }
 
 func (g *Game) CurrentPlayer() *Player {
-	if p := g.CurrentPlayerer(); p != nil {
+	p := g.CurrentPlayerer()
+	if p != nil {
 		return p.(*Player)
 	}
 	return nil
@@ -306,8 +307,8 @@ func (g *Game) DrawConCard() *ConCard {
 	return g.ConDeck.Draw()
 }
 
-func (g *Game) EnableActions(c *gin.Context) bool {
-	return g.CUserIsCPlayerOrAdmin(c) && (g.Phase == Actions || g.Phase == ImperialFavour)
+func (g *Game) EnableActions(cu *user.User) bool {
+	return g.IsCurrentPlayer(cu) && (g.Phase == Actions || g.Phase == ImperialFavour)
 }
 
 type JunkVoyages map[string][]int
@@ -329,16 +330,14 @@ func (g *Game) OnVoyage() JunkVoyages {
 	return jv
 }
 
-func (g *Game) options() (s string) {
+func (g *Game) options() string {
+	s := "Advanced"
 	if g.BasicGame {
 		s = "Basic"
-	} else {
-		s = "Advanced"
 	}
+
 	if g.AdmiralVariant {
-		s += " with Admiral Variant"
-	} else {
-		s += " without Admiral Variant"
+		return s + " with Admiral Variant"
 	}
-	return
+	return s + " without Admiral Variant"
 }

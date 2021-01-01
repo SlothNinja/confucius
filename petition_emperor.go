@@ -8,6 +8,7 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
+	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,10 +20,10 @@ func init() {
 	gob.RegisterName("*game.replaceInfluenceEntry", new(replaceInfluenceEntry))
 }
 
-func (g *Game) EnablePetitionEmperor(c *gin.Context) bool {
+func (g *Game) EnablePetitionEmperor(cu *user.User) bool {
 	cp := g.CurrentPlayer()
 	requiredCubes := cp.RequiredCubesFor(PetitionSpace)
-	return g.CUserIsCPlayerOrAdmin(c) && cp.ActionCubes >= requiredCubes && cp.hasPetitionGift() && !g.BasicGame
+	return g.IsCurrentPlayer(cu) && cp.ActionCubes >= requiredCubes && cp.hasPetitionGift() && !g.BasicGame
 }
 
 func (p *Player) hasPetitionGift() bool {
@@ -34,14 +35,14 @@ func (p *Player) hasPetitionGift() bool {
 	return false
 }
 
-func (g *Game) PetitionDirections() (strings []string) {
+func (g *Game) PetitionDirections() []string {
 	return []string{
 		"Select gift with which to petition the Emperor.",
 		"Petitioning Emperor costs two action cubes.",
 	}
 }
 
-func (g *GiftCard) PetitionDirections() (strings []string) {
+func (g *GiftCard) PetitionDirections() []string {
 	switch g.Value {
 	case Tile:
 		return []string{
@@ -62,14 +63,14 @@ func (g *GiftCard) PetitionDirections() (strings []string) {
 		return []string{
 			"Replace any unsecured marker on an official with a secured marker from any player's supply, including your own."}
 	}
-	return strings
+	return nil
 }
 
-func (g *Game) moveJunks(c *gin.Context) (string, game.ActionType, error) {
+func (g *Game) moveJunks(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	fromPlayer, toPlayer, junks, cubes, err := g.validateMoveJunks(c)
+	fromPlayer, toPlayer, junks, cubes, err := g.validateMoveJunks(c, cu)
 	if err != nil {
 		return "", game.None, err
 	}
@@ -119,8 +120,8 @@ func (e *moveJunksEntry) HTML() template.HTML {
 		g.NameByPID(e.PlayerID), e.Junks, pluralize("junk", e.Junks), g.NameByPID(e.FromPlayerID), g.NameByPID(e.ToPlayerID))
 }
 
-func (g *Game) validateMoveJunks(c *gin.Context) (*Player, *Player, int, int, error) {
-	cubes, err := g.validatePlayerAction(c)
+func (g *Game) validateMoveJunks(c *gin.Context, cu *user.User) (*Player, *Player, int, int, error) {
+	cubes, err := g.validatePlayerAction(c, cu)
 	if err != nil {
 		return nil, nil, 0, 0, err
 	}
@@ -147,11 +148,11 @@ func (g *Game) validateMoveJunks(c *gin.Context) (*Player, *Player, int, int, er
 	return fromPlayer, toPlayer, 2, cubes, nil
 }
 
-func (g *Game) replaceStudent(c *gin.Context) (string, game.ActionType, error) {
+func (g *Game) replaceStudent(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	p, cubes, err := g.validateReplaceStudent(c)
+	p, cubes, err := g.validateReplaceStudent(c, cu)
 	if err != nil {
 		return "", game.None, err
 	}
@@ -197,11 +198,11 @@ func (e *replaceStudentEntry) HTML() template.HTML {
 		e.Player().Name(), e.OtherPlayer().Name())
 }
 
-func (g *Game) validateReplaceStudent(c *gin.Context) (*Player, int, error) {
+func (g *Game) validateReplaceStudent(c *gin.Context, cu *user.User) (*Player, int, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	cbs, err := g.validatePlayerAction(c)
+	cbs, err := g.validatePlayerAction(c, cu)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -228,11 +229,11 @@ func (g *Game) validateReplaceStudent(c *gin.Context) (*Player, int, error) {
 	return nil, 0, sn.NewVError("Selected player does not have a student.")
 }
 
-func (g *Game) swapOfficials(c *gin.Context) (string, game.ActionType, error) {
+func (g *Game) swapOfficials(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	ministry1, ministry2, official1, official2, cubes, err := g.validateSwapOfficials(c)
+	ministry1, ministry2, official1, official2, cubes, err := g.validateSwapOfficials(c, cu)
 	if err != nil {
 		return "", game.None, err
 	}
@@ -282,11 +283,11 @@ func (g *swapOfficialsEntry) HTML() template.HTML {
 		g.Player().Name(), g.MinistryName1, g.Seniority1, g.MinistryName2, g.Seniority2)
 }
 
-func (g *Game) validateSwapOfficials(c *gin.Context) (*Ministry, *Ministry, *OfficialTile, *OfficialTile, int, error) {
+func (g *Game) validateSwapOfficials(c *gin.Context, cu *user.User) (*Ministry, *Ministry, *OfficialTile, *OfficialTile, int, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	cubes, err := g.validatePlayerAction(c)
+	cubes, err := g.validatePlayerAction(c, cu)
 	if err != nil {
 		return nil, nil, nil, nil, 0, err
 	}
@@ -321,11 +322,11 @@ func (g *Game) validateSwapOfficials(c *gin.Context) (*Ministry, *Ministry, *Off
 	return ministry1, ministry2, official1, official2, cubes, err
 }
 
-func (g *Game) redeployArmy(c *gin.Context) (string, game.ActionType, error) {
+func (g *Game) redeployArmy(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	fromBox, toBox, cubes, err := g.validateRedeployArmy(c)
+	fromBox, toBox, cubes, err := g.validateRedeployArmy(c, cu)
 	if err != nil {
 		return "", game.None, err
 	}
@@ -375,11 +376,11 @@ func (e *redeployArmyEntry) HTML() template.HTML {
 	return restful.HTML("%s used value 5 gift (Necklace) to redeploy army from %d point box of %s to %d point box of %s.", e.Player().Name(), e.FromBox, e.FromForeignLandName, e.ToBox, e.ToForeignLandName)
 }
 
-func (g *Game) validateRedeployArmy(c *gin.Context) (*ForeignLandBox, *ForeignLandBox, int, error) {
+func (g *Game) validateRedeployArmy(c *gin.Context, cu *user.User) (*ForeignLandBox, *ForeignLandBox, int, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	cubes, err := g.validatePlayerAction(c)
+	cubes, err := g.validatePlayerAction(c, cu)
 	if err != nil {
 		return nil, nil, 0, err
 	}
@@ -416,11 +417,11 @@ func (g *Game) validateRedeployArmy(c *gin.Context) (*ForeignLandBox, *ForeignLa
 	return fromBox, toBox, cubes, nil
 }
 
-func (g *Game) replaceInfluence(c *gin.Context) (string, game.ActionType, error) {
+func (g *Game) replaceInfluence(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	ministry, official, player, cubes, err := g.validateReplaceInfluence(c)
+	ministry, official, player, cubes, err := g.validateReplaceInfluence(c, cu)
 	if err != nil {
 		return "", game.None, err
 	}
@@ -473,11 +474,11 @@ func (e *replaceInfluenceEntry) HTML() template.HTML {
 		g.NameByPID(e.PlayerID), g.NameByPID(e.FromPlayerID), e.MinistryName, e.Seniority, g.NameByPID(e.ToPlayerID))
 }
 
-func (g *Game) validateReplaceInfluence(c *gin.Context) (*Ministry, *OfficialTile, *Player, int, error) {
+func (g *Game) validateReplaceInfluence(c *gin.Context, cu *user.User) (*Ministry, *OfficialTile, *Player, int, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	cubes, err := g.validatePlayerAction(c)
+	cubes, err := g.validatePlayerAction(c, cu)
 	if err != nil {
 		return nil, nil, nil, 0, err
 	}

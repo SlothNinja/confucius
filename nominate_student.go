@@ -8,6 +8,7 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
+	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,11 +16,11 @@ func init() {
 	gob.RegisterName("*game.nominateStudentEntry", new(nominateStudentEntry))
 }
 
-func (g *Game) nominateStudent(c *gin.Context) (string, game.ActionType, error) {
+func (g *Game) nominateStudent(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	cds, cbs, err := g.validateNominateStudent(c)
+	cds, cbs, err := g.validateNominateStudent(c, cu)
 	if err != nil {
 		return "", game.None, err
 	}
@@ -71,8 +72,8 @@ func (e *nominateStudentEntry) HTML() template.HTML {
 		e.Player().Name(), length, pluralize("card", length), e.Played.Coins())
 }
 
-func (g *Game) validateNominateStudent(c *gin.Context) (ConCards, int, error) {
-	cbs, err := g.validatePlayerAction(c)
+func (g *Game) validateNominateStudent(c *gin.Context, cu *user.User) (ConCards, int, error) {
+	cbs, err := g.validatePlayerAction(c, cu)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -100,10 +101,10 @@ func (g *Game) validateNominateStudent(c *gin.Context) (ConCards, int, error) {
 	return cds, cbs, nil
 }
 
-func (g *Game) EnableNominateStudent(c *gin.Context) bool {
+func (g *Game) EnableNominateStudent(cu *user.User) bool {
 	cp := g.CurrentPlayer()
 	cd := g.Candidate()
-	return g.inActionsOrImperialFavourPhase() && cp != nil && g.CUserIsCPlayerOrAdmin(c) &&
+	return g.inActionsOrImperialFavourPhase() && cp != nil && g.IsCurrentPlayer(cu) &&
 		g.Round > 1 && !cp.PerformedAction && cp.hasEnoughCubesFor(NominateSpace) && cd.hasSpaceFor(cp) &&
 		cp.canAffordNomination()
 }

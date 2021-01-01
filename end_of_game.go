@@ -18,9 +18,9 @@ func (client Client) endOfGamePhase(c *gin.Context, g *Game) (contest.Contests, 
 	defer log.Debugf("Exiting")
 
 	if !g.endGame() {
-		g.newRoundPhase(c)
-		g.countGiftsPhase(c)
-		g.chooseChiefMinisterPhase(c)
+		g.newRoundPhase()
+		g.countGiftsPhase()
+		g.chooseChiefMinisterPhase()
 		return nil, nil
 	}
 
@@ -348,15 +348,17 @@ func (e *announceWinnersEntry) HTML() template.HTML {
 	return restful.HTML("Congratulations to: %s.", restful.ToSentence(names))
 }
 
-func (g *Game) Winners() (ps Players) {
-	switch length := len(g.WinnerIDS); length {
+func (g *Game) Winners() Players {
+	l := len(g.WinnerIDS)
+	switch l {
 	case 0:
+		return nil
 	default:
-		ps = make(Players, length)
+		ps := make(Players, l)
 		for i, pid := range g.WinnerIDS {
-			player := g.PlayerByID(pid)
-			ps[i] = player
+			p := g.PlayerByID(pid)
+			ps[i] = p
 		}
+		return ps
 	}
-	return
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
+	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,11 +17,11 @@ func init() {
 	gob.RegisterName("*game.placeStudentEntry", new(placeStudentEntry))
 }
 
-func (g *Game) placeStudent(c *gin.Context) (string, game.ActionType, error) {
+func (g *Game) placeStudent(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	ministry, seniority, err := g.validatePlaceStudent(c)
+	ministry, seniority, err := g.validatePlaceStudent(c, cu)
 	if err != nil {
 		return "", game.None, err
 	}
@@ -106,7 +107,7 @@ func (e *placeStudentEntry) HTML() template.HTML {
 		e.Player().Name(), e.Seniority, e.MinistryName, e.OtherPlayer().Name()))
 }
 
-func (g *Game) validatePlaceStudent(c *gin.Context) (*Ministry, Seniority, error) {
+func (g *Game) validatePlaceStudent(c *gin.Context, cu *user.User) (*Ministry, Seniority, error) {
 	if len(g.MinistriesFor(g.Candidate())) == 0 {
 		return nil, 0, nil
 	}
@@ -115,7 +116,7 @@ func (g *Game) validatePlaceStudent(c *gin.Context) (*Ministry, Seniority, error
 		return nil, 0, err
 	}
 
-	if !g.CUserIsCPlayerOrAdmin(c) {
+	if !g.IsCurrentPlayer(cu) {
 		return nil, 0, sn.NewVError("Only the current player may place a student in a ministry.")
 	}
 
@@ -141,8 +142,8 @@ func (g *Game) validatePlaceStudent(c *gin.Context) (*Ministry, Seniority, error
 	return m, s, nil
 }
 
-func (g *Game) EnablePlaceStudent(c *gin.Context) bool {
-	return g.CUserIsCPlayerOrAdmin(c) && g.Phase == ExaminationResolution && !g.CurrentPlayer().PerformedAction
+func (g *Game) EnablePlaceStudent(cu *user.User) bool {
+	return g.IsCurrentPlayer(cu) && g.Phase == ExaminationResolution && !g.CurrentPlayer().PerformedAction
 }
 
 func (g *Game) MinistriesFor(c *CandidateTile) Ministries {

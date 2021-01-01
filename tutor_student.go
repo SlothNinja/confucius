@@ -8,6 +8,7 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
+	"github.com/SlothNinja/user"
 	stats "github.com/SlothNinja/user-stats"
 	"github.com/gin-gonic/gin"
 )
@@ -16,11 +17,11 @@ func init() {
 	gob.RegisterName("*game.tutorStudentEntry", new(tutorStudentEntry))
 }
 
-func (g *Game) tutorStudent(c *gin.Context) (string, game.ActionType, error) {
+func (g *Game) tutorStudent(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	cards, player, err := g.validateTutorStudent(c)
+	cards, player, err := g.validateTutorStudent(c, cu)
 	if err != nil {
 		return "", game.None, err
 	}
@@ -103,28 +104,30 @@ func (e *tutorStudentEntry) HTML() template.HTML {
 	return restful.HTML("%s has no cards to tutor a student.", e.Player().Name())
 }
 
-func (g *Game) validateTutorStudent(c *gin.Context) (cds ConCards, p *Player, err error) {
+func (g *Game) validateTutorStudent(c *gin.Context, cu *user.User) (ConCards, *Player, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	if cds, err = g.getConCards(c, "tutor-student"); err != nil {
-		return
+	cds, err := g.getConCards(c, "tutor-student")
+	if err != nil {
+		return nil, nil, err
 	}
 
-	p = g.PlayerBySID(c.PostForm("player"))
+	p := g.PlayerBySID(c.PostForm("player"))
 	cp := g.CurrentPlayer()
 
 	switch {
 	case !cp.TutorPlayers().Include(p):
-		err = sn.NewVError("You provided an incorrect player.")
-	case !g.CUserIsCPlayerOrAdmin(c):
-		err = sn.NewVError("Only the current player may pay to tutor a student.")
+		return nil, nil, sn.NewVError("You provided an incorrect player.")
+	case !g.IsCurrentPlayer(cu):
+		return nil, nil, sn.NewVError("Only the current player may pay to tutor a student.")
 	case g.Phase != ImperialExamination:
-		err = sn.NewVError("You cannot pay to tutor a student during the %s phase.", g.PhaseName())
+		return nil, nil, sn.NewVError("You cannot pay to tutor a student during the %s phase.", g.PhaseName())
 	case len(cds) < 1 && len(cp.ConCardHand) > 0:
-		err = sn.NewVError("You must play at least one Confucius Card.")
+		return nil, nil, sn.NewVError("You must play at least one Confucius Card.")
+	default:
+		return cds, p, nil
 	}
-	return
 }
 
 func (p *Player) TutorPlayers() Players {
@@ -169,7 +172,7 @@ func (p *Player) TutorPlayers() Players {
 	return both_players
 }
 
-func (p *Player) autoTutor(c *gin.Context) {
+func (p *Player) autoTutor() {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
@@ -185,33 +188,36 @@ func (p *Player) canAutoTutor() bool {
 	return (l == 1 && len(p.TutorPlayers()) == 1) || l == 0
 }
 
-func (g *Game) tutorStudentsPhaseFinishTurn(c *gin.Context) (s *stats.Stats, err error) {
+func (g *Game) tutorStudentsPhaseFinishTurn(c *gin.Context, cu *user.User) (*stats.Stats, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	if s, err = g.validateFinishTurn(c); err != nil {
-		return
+	s, err := g.validateFinishTurn(c, cu)
+	if err != nil {
+		return nil, err
 	}
 
-	if p := g.tutorStudentsPhaseNextPlayer(c); p != nil {
+	p := g.tutorStudentsPhaseNextPlayer()
+	if p != nil {
 		g.SetCurrentPlayerers(p)
-	} else {
-		g.resolveExamination(c)
+		return s, nil
 	}
-	return
+	g.resolveExamination()
+	return s, nil
 }
 
-func (g *Game) tutorStudentsPhaseNextPlayer(c *gin.Context, ps ...*Player) (p *Player) {
+func (g *Game) tutorStudentsPhaseNextPlayer(ps ...*Player) *Player {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
+	var p *Player
 	for p = g.nextPlayer(ps...); !g.Players().allPerformedAction() && p.canAutoTutor(); p = g.nextPlayer() {
 		g.SetCurrentPlayerers(p)
-		p.autoTutor(c)
+		p.autoTutor()
 	}
 
 	if p.PerformedAction {
-		p = nil
+		return nil
 	}
-	return
+	return p
 }

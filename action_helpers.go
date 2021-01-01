@@ -42,85 +42,81 @@ func (g *Game) getForeignLandBox(c *gin.Context, formValue string) (*ForeignLand
 	return land.Box(boxIndex), nil
 }
 
-func (g *Game) getSpaceID(c *gin.Context) (id SpaceID, err error) {
+func (g *Game) getSpaceID(c *gin.Context) (SpaceID, error) {
 	switch a := c.PostForm("action"); a {
 	case "bribe-official", "secure-official":
-		id = BribeSecureSpace
+		return BribeSecureSpace, nil
 	case "nominate-student":
-		id = NominateSpace
+		return NominateSpace, nil
 	case "force-exam":
-		id = ForceSpace
+		return ForceSpace, nil
 	case "buy-junks", "start-voyage":
-		id = JunksVoyageSpace
+		return JunksVoyageSpace, nil
 	case "recruit-army", "invade-land":
-		id = RecruitArmySpace
+		return RecruitArmySpace, nil
 	case "buy-gift":
-		id = BuyGiftSpace
+		return BuyGiftSpace, nil
 	case "give-gift":
-		id = GiveGiftSpace
+		return GiveGiftSpace, nil
 	case "commercial":
-		id = CommercialSpace
+		return CommercialSpace, nil
 	case "tax-income":
-		id = TaxIncomeSpace
+		return TaxIncomeSpace, nil
 	case "no-action":
-		id = NoActionSpace
+		return NoActionSpace, nil
 	case "move-junks", "replace-student",
 		"swap-officials", "redeploy-army",
 		"replace-influence":
-		id = PetitionSpace
+		return PetitionSpace, nil
 	case "pass", "take-gift", "take-cash", "take-extra-action", "take-bribery-reward",
 		"avenge-emperor", "take-army", "transfer-influence":
-		id = NoSpace
+		return NoSpace, nil
 	default:
-		err = sn.NewVError("%q is an invalid action.", a)
+		return NoSpace, sn.NewVError("%q is an invalid action.", a)
 	}
-	return
 }
 
-func (g *Game) getMinistryAndSeniority(c *gin.Context, formValue string) (m *Ministry, s Seniority, err error) {
-	var (
-		i  int
-		ss []string
-	)
-
-	if param := c.PostForm(formValue); param == "None" {
-		err = sn.NewVError("You must select an official.")
-		return
-	} else if ss = strings.SplitN(param, "-", 2); len(ss) != 2 {
-		err = sn.NewVError("Invalid format for ministry/seniority param.")
-		return
-	} else if i, err = strconv.Atoi(ss[1]); err != nil {
-		err = sn.NewVError("Invalid Official Seniority Provided.")
-		return
+func (g *Game) getMinistryAndSeniority(c *gin.Context, formValue string) (*Ministry, Seniority, error) {
+	param := c.PostForm(formValue)
+	if param == "None" {
+		return nil, 0, sn.NewVError("You must select an official.")
 	}
 
-	switch s = Seniority(i); ss[0] {
+	ss := strings.SplitN(param, "-", 2)
+	if len(ss) != 2 {
+		return nil, 0, sn.NewVError("Invalid format for ministry/seniority param.")
+	}
+
+	i, err := strconv.Atoi(ss[1])
+	if err != nil {
+		return nil, 0, sn.NewVError("Invalid Official Seniority Provided.")
+	}
+
+	s := Seniority(i)
+	switch ss[0] {
 	case "Bingbu":
-		m = g.Ministries[Bingbu]
+		return g.Ministries[Bingbu], s, nil
 	case "Hubu":
-		m = g.Ministries[Hubu]
+		return g.Ministries[Hubu], s, nil
 	case "Gongbu":
-		m = g.Ministries[Gongbu]
+		return g.Ministries[Gongbu], s, nil
 	default:
-		err = sn.NewVError("Invalid Ministry Provided.")
+		return nil, 0, sn.NewVError("Invalid Ministry Provided.")
 	}
-	return
 }
 
-func (g *Game) getMinistryAndOfficial(c *gin.Context, formValue string) (m *Ministry, o *OfficialTile, err error) {
-	var (
-		s  Seniority
-		ok bool
-	)
-
-	if m, s, err = g.getMinistryAndSeniority(c, formValue); err != nil {
-		return
+func (g *Game) getMinistryAndOfficial(c *gin.Context, formValue string) (*Ministry, *OfficialTile, error) {
+	m, s, err := g.getMinistryAndSeniority(c, formValue)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	if o, ok = m.Officials[s]; !ok {
-		err = sn.NewVError("Invalid official selected.")
+	o, ok := m.Officials[s]
+	if !ok {
+		return nil, nil, sn.NewVError("Invalid official selected.")
 	}
-	return
+
+	return m, o, nil
 }
 
 func (g *Game) getPlayer(c *gin.Context, formValue string) (*Player, error) {
@@ -141,53 +137,66 @@ func (g *Game) getPlayer(c *gin.Context, formValue string) (*Player, error) {
 	return p, nil
 }
 
-func (g *Game) getGiftValue(c *gin.Context, formValue string) (gv GiftCardValue, err error) {
+func (g *Game) getGiftValue(c *gin.Context, formValue string) (GiftCardValue, error) {
 	var gi int
 
-	if gi, err = strconv.Atoi(c.PostForm(formValue)); err != nil {
-		err = sn.NewVError("You must select an gift card.")
-	} else {
-		gv = GiftCardValue(gi)
+	gi, err := strconv.Atoi(c.PostForm(formValue))
+	if err != nil {
+		return 0, sn.NewVError("You must select an gift card.")
 	}
-	return
+
+	return GiftCardValue(gi), nil
 }
 
-func (g *Game) getRewardCard(c *gin.Context) (cd *EmperorCard, err error) {
+func (g *Game) getRewardCard(c *gin.Context) (*EmperorCard, error) {
 
-	var t int
-	if t, err = strconv.Atoi(c.PostForm("reward-card")); err != nil {
-		err = sn.NewVError("You must select an Emperor's Reward card.")
-		return
+	t, err := strconv.Atoi(c.PostForm("reward-card"))
+	if err != nil {
+		return nil, sn.NewVError("You must select an Emperor's Reward card.")
 	}
 
 	cp := g.CurrentPlayer()
-	if cd = cp.GetEmperorCard(EmperorCardType(t)); cd == nil {
-		err = sn.NewVError("You don't have the selected Emperor's Reward card.")
+	cd := cp.GetEmperorCard(EmperorCardType(t))
+	if cd == nil {
+		return nil, sn.NewVError("You don't have the selected Emperor's Reward card.")
 	}
-	return
+	return cd, nil
 }
 
-func (g *Game) getConCards(c *gin.Context, formValue string) (cds ConCards, err error) {
-	var c1, c2, c3, c1Cnt, c2Cnt, c3Cnt int
+func (g *Game) getConCards(c *gin.Context, formValue string) (ConCards, error) {
 
 	cp := g.CurrentPlayer()
 
-	if c1, err = strconv.Atoi(c.PostForm(formValue + "-coins1")); err != nil || c1 < 0 {
-		err = sn.NewVError("Invalid value for Coin 1 cards received.")
-	} else if c2, err = strconv.Atoi(c.PostForm(formValue + "-coins2")); err != nil || c2 < 0 {
-		err = sn.NewVError("Invalid value for Coin 2 cards received.")
-	} else if c3, err = strconv.Atoi(c.PostForm(formValue + "-coins3")); err != nil || c3 < 0 {
-		err = sn.NewVError("Invalid value for Coin 3 cards received.")
-	} else if c1Cnt = cp.CardCount(1); c1 > c1Cnt {
-		err = sn.NewVError("You selected %d cards with one coin, but only have %d of such cards.", c1, c1Cnt)
-	} else if c2Cnt = cp.CardCount(2); c2 > c2Cnt {
-		err = sn.NewVError("You selected %d cards with two coins, but only have %d of such cards.", c2, c2Cnt)
-	} else if c3Cnt = cp.CardCount(3); c3 > c3Cnt {
-		err = sn.NewVError("You selected %d cards with three coins, but only have %d of such cards.", c3, c3Cnt)
-	} else {
-		cds = ConCards{}.AppendN(1, c1).AppendN(2, c2).AppendN(3, c3)
+	c1, err := strconv.Atoi(c.PostForm(formValue + "-coins1"))
+	if err != nil || c1 < 0 {
+		return nil, sn.NewVError("Invalid value for Coin 1 cards received.")
 	}
-	return
+
+	c2, err := strconv.Atoi(c.PostForm(formValue + "-coins2"))
+	if err != nil || c2 < 0 {
+		return nil, sn.NewVError("Invalid value for Coin 2 cards received.")
+	}
+
+	c3, err := strconv.Atoi(c.PostForm(formValue + "-coins3"))
+	if err != nil || c3 < 0 {
+		return nil, sn.NewVError("Invalid value for Coin 3 cards received.")
+	}
+
+	c1Cnt := cp.CardCount(1)
+	if c1 > c1Cnt {
+		return nil, sn.NewVError("You selected %d cards with one coin, but only have %d of such cards.", c1, c1Cnt)
+	}
+
+	c2Cnt := cp.CardCount(2)
+	if c2 > c2Cnt {
+		return nil, sn.NewVError("You selected %d cards with two coins, but only have %d of such cards.", c2, c2Cnt)
+	}
+
+	c3Cnt := cp.CardCount(3)
+	if c3 > c3Cnt {
+		return nil, sn.NewVError("You selected %d cards with three coins, but only have %d of such cards.", c3, c3Cnt)
+	}
+	return ConCards{}.AppendN(1, c1).AppendN(2, c2).AppendN(3, c3), nil
 }
 
 func (g *Game) CoinOptions(prefix string) template.HTML {

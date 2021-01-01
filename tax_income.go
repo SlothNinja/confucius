@@ -7,6 +7,7 @@ import (
 	"github.com/SlothNinja/game"
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
+	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,11 +15,11 @@ func init() {
 	gob.RegisterName("*game.taxIncomeEntry", new(taxIncomeEntry))
 }
 
-func (g *Game) taxIncome(c *gin.Context) (string, game.ActionType, error) {
+func (g *Game) taxIncome(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	cubes, err := g.validatePlayerAction(c)
+	cubes, err := g.validatePlayerAction(c, cu)
 	if err != nil {
 		return "", game.None, err
 	}
@@ -57,9 +58,9 @@ func (e *taxIncomeEntry) HTML() template.HTML {
 	return restful.HTML("%s received two Confucius cards of tax income.", e.Player().Name())
 }
 
-func (g *Game) EnableTaxIncome(c *gin.Context) bool {
+func (g *Game) EnableTaxIncome(cu *user.User) bool {
 	cp := g.CurrentPlayer()
-	return g.CUserIsCPlayerOrAdmin(c) && cp.canCollectTaxIncome()
+	return g.IsCurrentPlayer(cu) && cp.canCollectTaxIncome()
 }
 
 func (p *Player) canCollectTaxIncome() bool {

@@ -8,6 +8,7 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
+	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,11 +17,11 @@ func init() {
 	gob.RegisterName("*game.autoTransferTempInfluenceInEntry", new(autoTransferTempInfluenceInEntry))
 }
 
-func (g *Game) tempTransfer(c *gin.Context) (string, game.ActionType, error) {
+func (g *Game) tempTransfer(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	p, err := g.validateTempTransfer(c)
+	p, err := g.validateTempTransfer(c, cu)
 	if err != nil {
 		return "", game.None, err
 	}
@@ -35,7 +36,7 @@ func (g *Game) tempTransfer(c *gin.Context) (string, game.ActionType, error) {
 	return "", game.Cache, nil
 }
 
-func (g *Game) autoTempTransferInfluence(c *gin.Context, from, to *Player) {
+func (g *Game) autoTempTransferInfluence(from, to *Player) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
@@ -101,7 +102,7 @@ func (e *autoTransferTempInfluenceInEntry) HTML() template.HTML {
 		e.MinistryName, e.Player().Name(), e.OtherPlayer().Name(), e.GiftName)
 }
 
-func (g *Game) validateTempTransfer(c *gin.Context) (*Player, error) {
+func (g *Game) validateTempTransfer(c *gin.Context, cu *user.User) (*Player, error) {
 	p, err := g.getPlayer(c, "temp-transfer-player")
 	if err != nil {
 		return nil, err
@@ -113,7 +114,7 @@ func (g *Game) validateTempTransfer(c *gin.Context) (*Player, error) {
 	switch {
 	case m == nil:
 		return nil, sn.NewVError("No ministry resolution in progress.")
-	case !g.CUserIsCPlayerOrAdmin(c):
+	case !g.IsCurrentPlayer(cu):
 		return nil, sn.NewVError("Only the current player may perform g action.")
 	case !(g.Phase == MinistryResolution || g.Phase == FinalMinistryResolution):
 		return nil, sn.NewVError("You cannot transfer influence during the %s phase.", g.PhaseName())
@@ -124,8 +125,8 @@ func (g *Game) validateTempTransfer(c *gin.Context) (*Player, error) {
 	return p, nil
 }
 
-func (g *Game) EnableTempTransfer(c *gin.Context) bool {
-	return g.CUserIsCPlayerOrAdmin(c) && g.Phase == MinistryResolution || g.Phase == FinalMinistryResolution
+func (g *Game) EnableTempTransfer(cu *user.User) bool {
+	return g.IsCurrentPlayer(cu) && g.Phase == MinistryResolution || g.Phase == FinalMinistryResolution
 }
 
 func (p *Player) TempPlayers() Players {

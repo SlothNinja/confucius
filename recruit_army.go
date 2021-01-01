@@ -8,6 +8,7 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
+	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,12 +16,12 @@ func init() {
 	gob.RegisterName("*game.recruitArmyEntry", new(recruitArmyEntry))
 }
 
-func (g *Game) recruitArmy(c *gin.Context) (string, game.ActionType, error) {
+func (g *Game) recruitArmy(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
 	// Validate and get cards and cubes
-	cards, cubes, err := g.validateRecruitArmy(c)
+	cards, cubes, err := g.validateRecruitArmy(c, cu)
 	if err != nil {
 		return "", game.None, err
 	}
@@ -68,8 +69,8 @@ func (e *recruitArmyEntry) HTML() template.HTML {
 		e.Player().Name(), len(e.Played), e.Played.Licenses())
 }
 
-func (g *Game) validateRecruitArmy(c *gin.Context) (ConCards, int, error) {
-	cubes, err := g.validatePlayerAction(c)
+func (g *Game) validateRecruitArmy(c *gin.Context, cu *user.User) (ConCards, int, error) {
+	cubes, err := g.validatePlayerAction(c, cu)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -90,9 +91,9 @@ func (g *Game) validateRecruitArmy(c *gin.Context) (ConCards, int, error) {
 	return cards, cubes, nil
 }
 
-func (g *Game) EnableRecruitArmy(c *gin.Context) bool {
+func (g *Game) EnableRecruitArmy(cu *user.User) bool {
 	cp := g.CurrentPlayer()
-	return g.CUserIsCPlayerOrAdmin(c) && cp.canRecruitAnArmy()
+	return g.IsCurrentPlayer(cu) && cp.canRecruitAnArmy()
 }
 
 func (p *Player) canRecruitAnArmy() bool {

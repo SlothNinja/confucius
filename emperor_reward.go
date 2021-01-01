@@ -9,6 +9,7 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
+	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,8 +22,8 @@ func init() {
 	gob.RegisterName("*game.takeBriberyRewardEntry", new(takeBriberyRewardEntry))
 }
 
-func (g *Game) EnableEmperorReward(c *gin.Context) bool {
-	return g.CUserIsCPlayerOrAdmin(c) && g.CurrentPlayer().canEmperorReward()
+func (g *Game) EnableEmperorReward(cu *user.User) bool {
+	return g.IsCurrentPlayer(cu) && g.CurrentPlayer().canEmperorReward()
 }
 
 func (p *Player) canEmperorReward() bool {
@@ -37,14 +38,13 @@ func (p *Player) canEmperorReward() bool {
 	return true
 }
 
-func (g *Game) takeCash(c *gin.Context) (tmpl string, a game.ActionType, err error) {
+func (g *Game) takeCash(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	var cd *EmperorCard
-	if cd, err = g.validateTakeCash(c); err != nil {
-		a = game.None
-		return
+	cd, err := g.validateTakeCash(c, cu)
+	if err != nil {
+		return "", game.None, err
 	}
 
 	// Perform Take Cash Action
@@ -61,8 +61,7 @@ func (g *Game) takeCash(c *gin.Context) (tmpl string, a game.ActionType, err err
 
 	// Set flash message
 	restful.AddNoticef(c, string(e.HTML()))
-	a = game.Cache
-	return
+	return "", game.Cache, nil
 }
 
 type takeCashEntry struct {
@@ -81,36 +80,33 @@ func (e *takeCashEntry) HTML() template.HTML {
 	return restful.HTML("%s played Emperor's Reward card to take four Confucius cards.", e.Player().Name())
 }
 
-func (g *Game) validateTakeCash(c *gin.Context) (cd *EmperorCard, err error) {
+func (g *Game) validateTakeCash(c *gin.Context, cu *user.User) (*EmperorCard, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	if _, err = g.validatePlayerAction(c); err != nil {
-		return
+	_, err := g.validatePlayerAction(c, cu)
+	if err != nil {
+		return nil, err
 	}
 
-	if cd, err = g.getRewardCard(c); err != nil {
-		return
+	cd, err := g.getRewardCard(c)
+	if err != nil {
+		return nil, err
 	}
 
 	if !cd.hasType(Cash) {
-		err = sn.NewVError("You did not play the correct emperor's reward card for the selected action.")
+		return nil, sn.NewVError("You did not play the correct emperor's reward card for the selected action.")
 	}
-	return
+	return cd, nil
 }
 
-func (g *Game) takeGift(c *gin.Context) (tmpl string, a game.ActionType, err error) {
+func (g *Game) takeGift(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	var (
-		cd *EmperorCard
-		gc *GiftCard
-	)
-
-	if cd, gc, err = g.validateTakeGift(c); err != nil {
-		a = game.None
-		return
+	cd, gc, err := g.validateTakeGift(c, cu)
+	if err != nil {
+		return "", game.None, err
 	}
 
 	// Remove Gift From GiftCardHand
@@ -133,8 +129,7 @@ func (g *Game) takeGift(c *gin.Context) (tmpl string, a game.ActionType, err err
 
 	// Set flash message
 	restful.AddNoticef(c, string(e.HTML()))
-	a = game.Cache
-	return
+	return "", game.Cache, nil
 }
 
 type takeGiftEntry struct {
@@ -155,43 +150,43 @@ func (e *takeGiftEntry) HTML() template.HTML {
 		e.Player().Name(), e.Gift.Value, e.Gift.Name())
 }
 
-func (g *Game) validateTakeGift(c *gin.Context) (cd *EmperorCard, gc *GiftCard, err error) {
+func (g *Game) validateTakeGift(c *gin.Context, cu *user.User) (*EmperorCard, *GiftCard, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	if _, err = g.validatePlayerAction(c); err != nil {
-		return
+	_, err := g.validatePlayerAction(c, cu)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	if cd, err = g.getRewardCard(c); err != nil {
-		return
+	cd, err := g.getRewardCard(c)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	if !cd.hasType(FreeGift) {
-		err = sn.NewVError("You did not play the correct emperor's reward card for the selected action.")
-		return
+		return nil, nil, sn.NewVError("You did not play the correct emperor's reward card for the selected action.")
 	}
 
-	var gv GiftCardValue
-	if gv, err = g.getGiftValue(c, "take-gift"); err != nil {
-		return
+	gv, err := g.getGiftValue(c, "take-gift")
+	if err != nil {
+		return nil, nil, err
 	}
 
-	if gc = g.CurrentPlayer().GetGift(gv); gc == nil {
-		err = sn.NewVError("Selected gift card is not available.")
+	gc := g.CurrentPlayer().GetGift(gv)
+	if gc == nil {
+		return nil, nil, sn.NewVError("Selected gift card is not available.")
 	}
-	return
+	return cd, gc, nil
 }
 
-func (g *Game) takeArmy(c *gin.Context) (tmpl string, a game.ActionType, err error) {
+func (g *Game) takeArmy(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	var cd *EmperorCard
-
-	if cd, err = g.validateTakeArmy(c); err != nil {
-		a = game.None
-		return
+	cd, err := g.validateTakeArmy(c, cu)
+	if err != nil {
+		return "", game.None, err
 	}
 
 	// Recruit Army
@@ -211,8 +206,7 @@ func (g *Game) takeArmy(c *gin.Context) (tmpl string, a game.ActionType, err err
 
 	// Set flash message
 	restful.AddNoticef(c, string(e.HTML()))
-	a = game.Cache
-	return
+	return "", game.Cache, nil
 }
 
 type takeArmyEntry struct {
@@ -231,36 +225,38 @@ func (e *takeArmyEntry) HTML() template.HTML {
 	return restful.HTML("%s played Emperor's Reward card to recruit an army.", e.Player().Name())
 }
 
-func (g *Game) validateTakeArmy(c *gin.Context) (cd *EmperorCard, err error) {
+func (g *Game) validateTakeArmy(c *gin.Context, cu *user.User) (*EmperorCard, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	if _, err = g.validatePlayerAction(c); err != nil {
-		return
+	_, err := g.validatePlayerAction(c, cu)
+	if err != nil {
+		return nil, err
 	}
 
-	if cd, err = g.getRewardCard(c); err != nil {
-		return
+	cd, err := g.getRewardCard(c)
+	if err != nil {
+		return nil, err
 	}
 
 	if !cd.hasType(RecruitFreeArmy) {
-		err = sn.NewVError("You did not play the correct emperor's reward card for the selected action.")
+		return nil, sn.NewVError("You did not play the correct emperor's reward card for the selected action.")
 	}
 
-	if cp := g.CurrentPlayer(); !cp.hasArmies() {
-		err = sn.NewVError("You have no armies to recruit.")
+	cp := g.CurrentPlayer()
+	if !cp.hasArmies() {
+		return nil, sn.NewVError("You have no armies to recruit.")
 	}
-	return
+	return cd, nil
 }
 
-func (g *Game) takeExtraAction(c *gin.Context) (tmpl string, act game.ActionType, err error) {
+func (g *Game) takeExtraAction(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	var cd *EmperorCard
-	if cd, err = g.validateTakeExtraAction(c); err != nil {
-		act = game.None
-		return
+	cd, err := g.validateTakeExtraAction(c, cu)
+	if err != nil {
+		return "", game.None, nil
 	}
 
 	// Setup For Extra Action
@@ -278,8 +274,7 @@ func (g *Game) takeExtraAction(c *gin.Context) (tmpl string, act game.ActionType
 
 	// Set flash message
 	restful.AddNoticef(c, string(e.HTML()))
-	act = game.Cache
-	return
+	return "", game.Cache, nil
 }
 
 type takeExtraActionEntry struct {
@@ -298,32 +293,33 @@ func (e *takeExtraActionEntry) HTML() template.HTML {
 	return restful.HTML("%s played Emperor's Reward card to perform action without paying an action cube.", e.Player().Name())
 }
 
-func (g *Game) validateTakeExtraAction(c *gin.Context) (ec *EmperorCard, err error) {
+func (g *Game) validateTakeExtraAction(c *gin.Context, cu *user.User) (*EmperorCard, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	if _, err = g.validatePlayerAction(c); err != nil {
-		return
+	_, err := g.validatePlayerAction(c, cu)
+	if err != nil {
+		return nil, err
 	}
 
-	if ec, err = g.getRewardCard(c); err != nil {
-		return
+	ec, err := g.getRewardCard(c)
+	if err != nil {
+		return nil, err
 	}
 
 	if !ec.hasType(ExtraAction) {
-		err = sn.NewVError("You did not play the correct emperor's reward card for the selected action.")
+		return nil, sn.NewVError("You did not play the correct emperor's reward card for the selected action.")
 	}
-	return
+	return ec, nil
 }
 
-func (g *Game) avengeEmperor(c *gin.Context) (tmpl string, act game.ActionType, err error) {
+func (g *Game) avengeEmperor(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	var eCard *EmperorCard
-	if eCard, err = g.validateAvengeEmperor(c); err != nil {
-		act = game.None
-		return
+	eCard, err := g.validateAvengeEmperor(c, cu)
+	if err != nil {
+		return "", game.None, err
 	}
 
 	// Commit Recruited Army and Score Points
@@ -344,8 +340,7 @@ func (g *Game) avengeEmperor(c *gin.Context) (tmpl string, act game.ActionType, 
 
 	// Set flash message
 	restful.AddNoticef(c, string(e.HTML()))
-	act = game.Cache
-	return
+	return "", game.Cache, nil
 }
 
 type avengeEmperorEntry struct {
@@ -364,34 +359,35 @@ func (e *avengeEmperorEntry) HTML() template.HTML {
 	return restful.HTML("%s used Emperor's Reward card and army to avenge emperor.", e.Player().Name())
 }
 
-func (g *Game) validateAvengeEmperor(c *gin.Context) (eCard *EmperorCard, err error) {
+func (g *Game) validateAvengeEmperor(c *gin.Context, cu *user.User) (*EmperorCard, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	if _, err = g.validatePlayerAction(c); err != nil {
+	_, err := g.validatePlayerAction(c, cu)
+	if err != nil {
 		return nil, err
 	}
 
-	if eCard, err = g.getRewardCard(c); err != nil {
-		return
+	eCard, err := g.getRewardCard(c)
+	if err != nil {
+		return nil, err
 	}
 
 	if !eCard.hasType(EmperorInsulted) {
-		err = sn.NewVError("You did not play the correct emperor's reward card for the selected action.")
-		return
+		return nil, sn.NewVError("You did not play the correct emperor's reward card for the selected action.")
 	}
 
 	if !g.CurrentPlayer().hasRecruitedArmies() {
-		err = sn.NewVError("You have no recruited armies with which to avenge the Emperor.")
+		return nil, sn.NewVError("You have no recruited armies with which to avenge the Emperor.")
 	}
-	return
+	return eCard, nil
 }
 
-func (g *Game) takeBriberyReward(c *gin.Context) (string, game.ActionType, error) {
+func (g *Game) takeBriberyReward(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	cd, cs, ministry, o, err := g.validateBriberyReward(c)
+	cd, cs, ministry, o, err := g.validateBriberyReward(c, cu)
 	if err != nil {
 		return "", game.None, err
 	}
@@ -452,11 +448,11 @@ func (e *takeBriberyRewardEntry) HTML() template.HTML {
 	return restful.HTML("%s used Emperor's Reward card and %d Confucius %s having %d coins to replace unsecured marker of %s on %s official having %d seniority.", e.Player().Name(), length, pluralize("card", length), e.Played.Coins(), e.OtherPlayer().Name(), e.MinistryName, e.Seniority)
 }
 
-func (g *Game) validateBriberyReward(c *gin.Context) (*EmperorCard, ConCards, *Ministry, *OfficialTile, error) {
+func (g *Game) validateBriberyReward(c *gin.Context, cu *user.User) (*EmperorCard, ConCards, *Ministry, *OfficialTile, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	if _, err := g.validatePlayerAction(c); err != nil {
+	if _, err := g.validatePlayerAction(c, cu); err != nil {
 		return nil, nil, nil, nil, err
 	}
 

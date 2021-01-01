@@ -8,6 +8,7 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
+	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,19 +16,14 @@ func init() {
 	gob.RegisterName("*game.commercialEntry", new(commercialEntry))
 }
 
-func (g *Game) commercial(c *gin.Context) (tmpl string, a game.ActionType, err error) {
+func (g *Game) commercial(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	var (
-		cds, ncds ConCards
-		cbs, cv   int
-	)
-
 	// Validate and get cards and cubes
-	if cds, cbs, err = g.validateCommercial(c); err != nil {
-		a = game.None
-		return
+	cds, cbs, err := g.validateCommercial(c, cu)
+	if err != nil {
+		return "", game.None, err
 	}
 
 	cp := g.CurrentPlayer()
@@ -42,8 +38,8 @@ func (g *Game) commercial(c *gin.Context) (tmpl string, a game.ActionType, err e
 	g.ConDiscardPile.Append(cds...)
 
 	// Take Cards and Create Action Object for logging
-	cv = cds.Coins()
-	ncds = make(ConCards, cv+1)
+	cv := cds.Coins()
+	ncds := make(ConCards, cv+1)
 	for i := range ncds {
 		ncds[i] = g.DrawConCard()
 	}
@@ -54,8 +50,7 @@ func (g *Game) commercial(c *gin.Context) (tmpl string, a game.ActionType, err e
 
 	// Set flash message
 	restful.AddNoticef(c, string(entry.HTML()))
-	a = game.Cache
-	return
+	return "", game.Cache, nil
 }
 
 type commercialEntry struct {
@@ -82,31 +77,34 @@ func (e *commercialEntry) HTML() template.HTML {
 		e.Player().Name(), length, pluralize("card", length), coins, pluralize("coin", coins), len(e.Received))
 }
 
-func (g *Game) validateCommercial(c *gin.Context) (cds ConCards, cbs int, err error) {
+func (g *Game) validateCommercial(c *gin.Context, cu *user.User) (ConCards, int, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	if cbs, err = g.validatePlayerAction(c); err != nil {
-		return
+	cbs, err := g.validatePlayerAction(c, cu)
+	if err != nil {
+		return nil, 0, err
 	}
 
-	if cds, err = g.getConCards(c, "commercial"); err != nil {
-		return
+	cds, err := g.getConCards(c, "commercial")
+	if err != nil {
+		return nil, 0, err
 	}
 
-	switch cp, cv := g.CurrentPlayer(), cds.Coins(); {
+	cp, cv := g.CurrentPlayer(), cds.Coins()
+	switch {
 	case cp.TakenCommercial:
-		err = sn.NewVError("You have already taken the commercial income action this round.")
+		return nil, 0, sn.NewVError("You have already taken the commercial income action this round.")
 	case cv > 4:
-		err = sn.NewVError("You may only pay up to 4 coins. You paid %d coins.", cv)
+		return nil, 0, sn.NewVError("You may only pay up to 4 coins. You paid %d coins.", cv)
+	default:
+		return cds, cbs, nil
 	}
-
-	return
 }
 
-func (g *Game) EnableCommercial(c *gin.Context) bool {
+func (g *Game) EnableCommercial(cu *user.User) bool {
 	cp := g.CurrentPlayer()
 	return g.inActionsOrImperialFavourPhase() && g.CurrentPlayer() != nil &&
-		!cp.PerformedAction && g.CUserIsCPlayerOrAdmin(c) &&
+		!cp.PerformedAction && g.IsCurrentPlayer(cu) &&
 		cp.hasEnoughCubesFor(CommercialSpace) && !cp.TakenCommercial && cp.hasConCards()
 }

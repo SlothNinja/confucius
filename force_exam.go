@@ -8,6 +8,7 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
+	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,11 +16,11 @@ func init() {
 	gob.RegisterName("*game.forceExamEntry", new(forceExamEntry))
 }
 
-func (g *Game) forceExam(c *gin.Context) (string, game.ActionType, error) {
+func (g *Game) forceExam(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	cards, cubes, err := g.validateForceExam(c)
+	cards, cubes, err := g.validateForceExam(c, cu)
 	if err != nil {
 		return "", game.None, err
 	}
@@ -63,11 +64,11 @@ func (e *forceExamEntry) HTML() template.HTML {
 		e.Player().Name(), length, pluralize("card", length), e.Played.Coins())
 }
 
-func (g *Game) validateForceExam(c *gin.Context) (ConCards, int, error) {
+func (g *Game) validateForceExam(c *gin.Context, cu *user.User) (ConCards, int, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	cubes, err := g.validatePlayerAction(c)
+	cubes, err := g.validatePlayerAction(c, cu)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -89,9 +90,9 @@ func (g *Game) validateForceExam(c *gin.Context) (ConCards, int, error) {
 	return cards, cubes, nil
 }
 
-func (g *Game) EnableForceExam(c *gin.Context) bool {
+func (g *Game) EnableForceExam(cu *user.User) bool {
 	cp := g.CurrentPlayer()
-	return g.inActionsOrImperialFavourPhase() && cp != nil && g.CUserIsCPlayerOrAdmin(c) &&
+	return g.inActionsOrImperialFavourPhase() && cp != nil && g.IsCurrentPlayer(cu) &&
 		g.Round > 1 && !cp.PerformedAction && cp.hasEnoughCubesFor(ForceSpace) && cp.canAffordForceExam()
 }
 

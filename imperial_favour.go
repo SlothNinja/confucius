@@ -2,10 +2,9 @@ package confucius
 
 import (
 	"github.com/SlothNinja/log"
-	"github.com/gin-gonic/gin"
 )
 
-func (g *Game) imperialFavourPhase(c *gin.Context) {
+func (g *Game) imperialFavourPhase() {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
@@ -14,8 +13,7 @@ func (g *Game) imperialFavourPhase(c *gin.Context) {
 	g.ChiefMinister().clearActions()
 	g.SetCurrentPlayerers(g.ChiefMinister())
 	g.ActionSpaces[ImperialFavourSpace].returnActionCubes()
-	for _, player := range g.Players() {
-		player.Passed = false
+	for _, p := range g.Players() {
+		p.Passed = false
 	}
-	return
 }

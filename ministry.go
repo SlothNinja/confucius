@@ -60,22 +60,6 @@ func (m *Ministry) Name() string {
 	return ministryIDStrings[m.ID]
 }
 
-//func (m *Ministry) TempPlayer() *Player {
-//	if m.TempPlayerID != NoPlayerID {
-//		return m.Game().PlayerByID(m.TempPlayerID)
-//	}
-//	return nil
-//}
-//
-//func (m *Ministry) setTempPlayer(player *Player) {
-//	switch {
-//	case player == nil:
-//		m.TempPlayerID = NoPlayerID
-//	default:
-//		m.TempPlayerID = player.ID()
-//	}
-//}
-
 func (m *Ministry) Minister() *Player {
 	if m.MinisterID != NoPlayerID {
 		return m.Game().PlayerByID(m.MinisterID)
@@ -83,12 +67,12 @@ func (m *Ministry) Minister() *Player {
 	return nil
 }
 
-func (m *Ministry) setMinister(player *Player) {
+func (m *Ministry) setMinister(p *Player) {
 	switch {
-	case player == nil:
+	case p == nil:
 		m.MinisterID = NoPlayerID
 	default:
-		m.MinisterID = player.ID()
+		m.MinisterID = p.ID()
 	}
 }
 
@@ -99,17 +83,17 @@ func (m *Ministry) Secretary() *Player {
 	return nil
 }
 
-func (m *Ministry) setSecretary(player *Player) {
+func (m *Ministry) setSecretary(p *Player) {
 	switch {
-	case player == nil:
+	case p == nil:
 		m.SecretaryID = NoPlayerID
 	default:
-		m.SecretaryID = player.ID()
+		m.SecretaryID = p.ID()
 	}
 }
 
-func (m *Ministry) init(game *Game) {
-	m.SetGame(game)
+func (m *Ministry) init(g *Game) {
+	m.SetGame(g)
 	for _, official := range m.Officials {
 		official.ministry = m
 		official.game = m.game
@@ -197,12 +181,12 @@ func (o *OfficialTile) Player() *Player {
 	return nil
 }
 
-func (o *OfficialTile) setPlayer(player *Player) {
+func (o *OfficialTile) setPlayer(p *Player) {
 	switch {
-	case player == nil:
+	case p == nil:
 		o.PlayerID = NoPlayerID
 	default:
-		o.PlayerID = player.ID()
+		o.PlayerID = p.ID()
 	}
 }
 
@@ -225,12 +209,12 @@ func (o *OfficialTile) TempPlayer() *Player {
 	return nil
 }
 
-func (o *OfficialTile) setTempPlayer(player *Player) {
+func (o *OfficialTile) setTempPlayer(p *Player) {
 	switch {
-	case player == nil:
+	case p == nil:
 		o.TempID = NoPlayerID
 	default:
-		o.TempID = player.ID()
+		o.TempID = p.ID()
 	}
 }
 
@@ -263,12 +247,12 @@ func (c *CandidateTile) OtherPlayer() *Player {
 	return nil
 }
 
-func (c *CandidateTile) setOtherPlayer(player *Player) {
+func (c *CandidateTile) setOtherPlayer(p *Player) {
 	switch {
-	case player == nil:
+	case p == nil:
 		c.OtherPlayerID = NoPlayerID
 	default:
-		c.OtherPlayerID = player.ID()
+		c.OtherPlayerID = p.ID()
 	}
 }
 

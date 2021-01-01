@@ -8,6 +8,7 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
+	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,11 +16,11 @@ func init() {
 	gob.RegisterName("*game.secureOfficialEntry", new(secureOfficialEntry))
 }
 
-func (g *Game) secureOfficial(c *gin.Context) (string, game.ActionType, error) {
+func (g *Game) secureOfficial(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	cards, ministry, official, cubes, err := g.validateSecureOfficial(c)
+	cards, ministry, official, cubes, err := g.validateSecureOfficial(c, cu)
 	if err != nil {
 		return "", game.None, err
 	}
@@ -69,8 +70,8 @@ func (e *secureOfficialEntry) HTML() template.HTML {
 		e.Player().Name(), length, pluralize("card", length), e.Played.Coins(), e.MinistryName, e.Seniority)
 }
 
-func (g *Game) validateSecureOfficial(c *gin.Context) (ConCards, *Ministry, *OfficialTile, int, error) {
-	cubes, err := g.validatePlayerAction(c)
+func (g *Game) validateSecureOfficial(c *gin.Context, cu *user.User) (ConCards, *Ministry, *OfficialTile, int, error) {
+	cubes, err := g.validatePlayerAction(c, cu)
 	if err != nil {
 		return nil, nil, nil, 0, err
 	}
@@ -103,9 +104,9 @@ func (g *Game) validateSecureOfficial(c *gin.Context) (ConCards, *Ministry, *Off
 	return cards, ministry, official, cubes, nil
 }
 
-func (g *Game) EnableSecureOfficial(c *gin.Context) bool {
+func (g *Game) EnableSecureOfficial(cu *user.User) bool {
 	cp := g.CurrentPlayer()
-	return g.CUserIsCPlayerOrAdmin(c) && cp.canSecureAnOfficial()
+	return g.IsCurrentPlayer(cu) && cp.canSecureAnOfficial()
 }
 
 func (p *Player) canSecureAnOfficial() bool {

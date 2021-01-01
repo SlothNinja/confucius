@@ -10,6 +10,7 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
+	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,12 +18,12 @@ func init() {
 	gob.RegisterName("*game.startVoyageEntry", new(startVoyageEntry))
 }
 
-func (g *Game) startVoyage(c *gin.Context) (string, game.ActionType, error) {
+func (g *Game) startVoyage(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
 	// Get Junks and Cards
-	junks, cards, cubes, err := g.validateStartVoyage(c)
+	junks, cards, cubes, err := g.validateStartVoyage(c, cu)
 	if err != nil {
 		return "", game.None, err
 	}
@@ -130,8 +131,8 @@ func (e *startVoyageEntry) HTML() template.HTML {
 	return template.HTML(s)
 }
 
-func (g *Game) validateStartVoyage(c *gin.Context) (int, ConCards, int, error) {
-	cubes, err := g.validatePlayerAction(c)
+func (g *Game) validateStartVoyage(c *gin.Context, cu *user.User) (int, ConCards, int, error) {
+	cubes, err := g.validatePlayerAction(c, cu)
 	if err != nil {
 		return 0, nil, 0, err
 	}
@@ -158,9 +159,9 @@ func (g *Game) validateStartVoyage(c *gin.Context) (int, ConCards, int, error) {
 	return junks, cards, cubes, nil
 }
 
-func (g *Game) EnableStartVoyage(c *gin.Context) bool {
+func (g *Game) EnableStartVoyage(cu *user.User) bool {
 	cp := g.CurrentPlayer()
-	return g.CUserIsCPlayerOrAdmin(c) && cp.canStartVoyage()
+	return g.IsCurrentPlayer(cu) && cp.canStartVoyage()
 }
 
 func (p *Player) canStartVoyage() bool {

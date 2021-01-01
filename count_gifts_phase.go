@@ -6,7 +6,6 @@ import (
 	"html/template"
 
 	"github.com/SlothNinja/log"
-	"github.com/gin-gonic/gin"
 )
 
 func init() {
@@ -22,7 +21,7 @@ type GiftCount struct {
 
 type GiftCounts []*GiftCount
 
-func (g *Game) countGiftsPhase(c *gin.Context) {
+func (g *Game) countGiftsPhase() {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
