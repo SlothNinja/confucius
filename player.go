@@ -514,3 +514,14 @@ func (p *Player) hasJunks() bool {
 func (p *Player) hasLicenses() bool {
 	return p.ConCardHand.Licenses() > 0
 }
+
+func (g *Game) Color(p *Player, cu *user.User) color.Color {
+	uid := g.UserIDS[p.ID()]
+	cm := g.ColorMapFor(cu)
+	return cm[int(uid)]
+}
+
+func (g *Game) GravatarFor(p *Player, cu *user.User) template.HTML {
+	return template.HTML(fmt.Sprintf(`<a href=%q ><img src=%q alt="Gravatar" class="%s-border" /> </a>`,
+		g.UserPathFor(p), user.GravatarURL(g.EmailFor(p), "80", g.GravTypeFor(p)), g.Color(p, cu)))
+}
