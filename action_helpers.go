@@ -8,6 +8,7 @@ import (
 
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/sn"
+	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -492,33 +493,28 @@ func (g *Game) PetitionGiftOptions(cp *Player) template.HTML {
 	return template.HTML(s)
 }
 
-func (g *Game) MoveJunkPlayerOptions(prefix, label string) template.HTML {
-	return g.playerOptions(prefix, label, func(player *Player) (result bool) {
-		switch {
-		case player.Junks < 1:
-		default:
-			result = true
-		}
-		return
+func (g *Game) MoveJunkPlayerOptions(cu *user.User, prefix, label string) template.HTML {
+	return g.playerOptions(cu, prefix, label, func(p *Player) bool {
+		return !(p.Junks < 1)
 	})
 }
 
 type PlayerTest func(*Player) bool
 
-func (g *Game) OtherPlayerOptions(id, label string) template.HTML {
-	return g.playerOptions(id, label, func(player *Player) bool {
-		return !player.IsCurrentPlayer()
+func (g *Game) OtherPlayerOptions(cu *user.User, id, label string) template.HTML {
+	return g.playerOptions(cu, id, label, func(p *Player) bool {
+		return !p.IsCurrentPlayer()
 	})
 }
 
-func (g *Game) PlayerOptions(id, label string) template.HTML {
-	return g.playerOptions(id, label, func(player *Player) bool {
+func (g *Game) PlayerOptions(cu *user.User, id, label string) template.HTML {
+	return g.playerOptions(cu, id, label, func(p *Player) bool {
 		return true
 	})
 }
 
-func (g *Game) ReplaceStudentOptions(id, label string) template.HTML {
-	return g.playerOptions(id, label, func(p *Player) bool {
+func (g *Game) ReplaceStudentOptions(cu *user.User, id, label string) template.HTML {
+	return g.playerOptions(cu, id, label, func(p *Player) bool {
 		c := g.Candidate()
 		cp := g.CurrentPlayer()
 		switch {
@@ -535,7 +531,7 @@ func (g *Game) ReplaceStudentOptions(id, label string) template.HTML {
 	})
 }
 
-func (g *Game) playerOptions(id, label string, test PlayerTest) template.HTML {
+func (g *Game) playerOptions(cu *user.User, id, label string, test PlayerTest) template.HTML {
 	s := fmt.Sprintf(`
         <div>
 	        <label for=%q>%s</label>
@@ -544,7 +540,7 @@ func (g *Game) playerOptions(id, label string, test PlayerTest) template.HTML {
 	for _, p := range g.Players() {
 		if test == nil || test(p) {
 			s += fmt.Sprintf(`
-                        <option value="%d">%s (%s)</option>`, p.ID(), g.NameFor(p), p.Color())
+                        <option value="%d">%s (%s)</option>`, p.ID(), g.NameFor(p), g.Color(p, cu))
 		}
 	}
 	s += `
@@ -576,23 +572,23 @@ func (g *Game) giftOptions(cards GiftCards, id, label string) template.HTML {
 	return template.HTML(s)
 }
 
-func (g *Game) GiftTracker() template.HTML {
+func (g *Game) GiftTracker(cu *user.User) template.HTML {
 	s := `
         <div id="gift-tracker">
 	        <div class="content">`
-	for _, player := range g.Players() {
+	for _, p := range g.Players() {
 		for _, value := range g.GiftCardValues() {
 			s += fmt.Sprintf(`
-                        <div class="%s-%d">`, player.Color(), value)
+                        <div class="%s-%d">`, g.Color(p, cu), value)
 			s += `
                                 <div class="content">`
-			for count, gift := range player.GiftsReceived.OfValue(value) {
+			for count, gift := range p.GiftsReceived.OfValue(value) {
 				giver := gift.Player()
 				s += fmt.Sprintf(`
                                         <div class="marker-%d">`, count)
 				s += fmt.Sprintf(`
                                                 <img src="/images/confucius/%s-barrel-shadowed.png" alt="%s Marker" />`,
-					giver.Color(), giver.Color())
+					g.Color(giver, cu), g.Color(giver, cu))
 				s += `
                                         </div>`
 			}

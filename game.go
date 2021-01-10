@@ -313,7 +313,7 @@ func (g *Game) EnableActions(cu *user.User) bool {
 
 type JunkVoyages map[string][]int
 
-func (g *Game) OnVoyage() JunkVoyages {
+func (g *Game) OnVoyage(cu *user.User) JunkVoyages {
 	jv := make(map[string][]int, 5)
 	jv["white"] = []int{1, 2, 3, 4}
 	jv["yellow"] = []int{1, 2, 3, 4}
@@ -321,10 +321,11 @@ func (g *Game) OnVoyage() JunkVoyages {
 	jv["green"] = []int{1, 2, 3, 4}
 	jv["purple"] = []int{1, 2, 3, 4}
 
-	for _, player := range g.Players() {
-		jv[player.Color().String()] = []int{}
-		for i := 1 + player.OnVoyage; i <= 4; i++ {
-			jv[player.Color().String()] = append(jv[player.Color().String()], i)
+	for _, p := range g.Players() {
+		clr := g.Color(p, cu).String()
+		jv[clr] = []int{}
+		for i := 1 + p.OnVoyage; i <= 4; i++ {
+			jv[clr] = append(jv[clr], i)
 		}
 	}
 	return jv

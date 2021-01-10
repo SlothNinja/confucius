@@ -280,30 +280,30 @@ func (p *Player) NewGiftsBought() {
 	p.GiftsBought = GiftCards{card}
 }
 
-func (p *Player) displayBarrel() string {
-	return fmt.Sprintf(`<img src="/images/confucius/%s-barrel-shadowed.png" alt="%s Barrel" />`, p.Color(), p.Color())
+func (g *Game) displayBarrel(p *Player, cu *user.User) string {
+	return fmt.Sprintf(`<img src="/images/confucius/%s-barrel-shadowed.png" alt="%s Barrel" />`, g.Color(p, cu), g.Color(p, cu))
 }
 
-func (p *Player) DisplayBarrel() template.HTML {
-	return template.HTML(p.displayBarrel())
+func (g *Game) DisplayBarrel(p *Player, cu *user.User) template.HTML {
+	return template.HTML(g.displayBarrel(p, cu))
 }
 
-func (p *Player) DisplaySecuredBarrel() template.HTML {
-	result := p.displayBarrel()
-	result += fmt.Sprintf(`<div class="text %s">S</div>`, p.TextColor())
+func (g *Game) DisplaySecuredBarrel(p *Player, cu *user.User) template.HTML {
+	result := g.displayBarrel(p, cu)
+	result += fmt.Sprintf(`<div class="text %s">S</div>`, g.TextColor(p, cu))
 	return template.HTML(result)
 }
 
-func (p *Player) DisplayTempBarrel() template.HTML {
-	result := p.displayBarrel()
-	result += fmt.Sprintf(`<div class="text %s">T</div>`, p.TextColor())
+func (g *Game) DisplayTempBarrel(p *Player, cu *user.User) template.HTML {
+	result := g.displayBarrel(p, cu)
+	result += fmt.Sprintf(`<div class="text %s">T</div>`, g.TextColor(p, cu))
 	return template.HTML(result)
 }
 
-func (p *Player) DisplayArmies() string {
+func (g *Game) DisplayArmies(p *Player, cu *user.User) string {
 	s := ""
 	for i := 0; i < p.Armies; i++ {
-		s += fmt.Sprintf("<img src=\"/images/confucius/%s-army-shadowed.png\" alt=\"%s Army\"/>", p.Color(), p.Color())
+		s += fmt.Sprintf("<img src=\"/images/confucius/%s-army-shadowed.png\" alt=\"%s Army\"/>", g.Color(p, cu), g.Color(p, cu))
 	}
 	return s
 }
@@ -524,4 +524,20 @@ func (g *Game) Color(p *Player, cu *user.User) color.Color {
 func (g *Game) GravatarFor(p *Player, cu *user.User) template.HTML {
 	return template.HTML(fmt.Sprintf(`<a href=%q ><img src=%q alt="Gravatar" class="%s-border" /> </a>`,
 		g.UserPathFor(p), user.GravatarURL(g.EmailFor(p), "80", g.GravTypeFor(p)), g.Color(p, cu)))
+}
+
+var textColors = map[color.Color]color.Color{
+	color.Yellow: color.Black,
+	color.Purple: color.White,
+	color.Green:  color.Yellow,
+	color.White:  color.Black,
+	color.Black:  color.White,
+}
+
+func (g *Game) TextColor(p *Player, cu *user.User) color.Color {
+	c, ok := textColors[g.Color(p, cu)]
+	if !ok {
+		c = color.Black
+	}
+	return c
 }
