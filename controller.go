@@ -1,8 +1,10 @@
 package confucius
 
 import (
+	"encoding/gob"
 	"errors"
 	"fmt"
+	"html/template"
 	"net/http"
 	"strconv"
 
@@ -17,8 +19,14 @@ import (
 	"github.com/SlothNinja/sn"
 	gtype "github.com/SlothNinja/type"
 	"github.com/SlothNinja/user"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
+
+func init() {
+	gob.Register(make(restful.Notices, 0))
+	gob.Register(make(restful.Errors, 0))
+}
 
 const (
 	gameKey   = "Game"
@@ -147,6 +155,33 @@ func (g *Game) Update(c *gin.Context, cu *user.User) (string, game.ActionType, e
 	}
 }
 
+// gets any notices and errors from flash and clears flash
+func getFlashes(c *gin.Context) (restful.Notices, restful.Errors, error) {
+	session := sessions.Default(c)
+
+	var ns, es []template.HTML
+	notices := session.Flashes("_notices")
+	session.AddFlash("", "_notices")
+	for i := range notices {
+		n, ok := notices[i].(restful.Notices)
+		if ok {
+			ns = append(es, n...)
+		}
+	}
+
+	errors := session.Flashes("_errors")
+	session.AddFlash("", "_errors")
+	for i := range errors {
+		e, ok := errors[i].(restful.Errors)
+		if ok {
+			es = append(es, e...)
+		}
+	}
+
+	err := session.Save()
+	return ns, es, err
+}
+
 func (client *Client) show(prefix string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		client.Log.Debugf(msgEnter)
@@ -168,6 +203,12 @@ func (client *Client) show(prefix string) gin.HandlerFunc {
 		if err != nil {
 			client.Log.Debugf(err.Error())
 		}
+
+		notices, errors, err := getFlashes(c)
+		if err != nil {
+			client.Log.Errorf(err.Error())
+		}
+
 		c.HTML(http.StatusOK, prefix+"/show", gin.H{
 			"Context":    c,
 			"VersionID":  sn.VersionID(),
@@ -177,8 +218,8 @@ func (client *Client) show(prefix string) gin.HandlerFunc {
 			"Admin":      game.AdminFrom(c),
 			"MessageLog": ml,
 			"ColorMap":   color.MapFrom(c),
-			"Notices":    restful.NoticesFrom(c),
-			"Errors":     restful.ErrorsFrom(c),
+			"Notices":    notices,
+			"Errors":     errors,
 		})
 	}
 }
@@ -270,8 +311,34 @@ func (client *Client) update(prefix string) gin.HandlerFunc {
 		case jData != nil && template == "json":
 			c.JSON(http.StatusOK, jData)
 		case template == "":
+			notices := restful.NoticesFrom(c)
+			errors := restful.ErrorsFrom(c)
+
+			client.Log.Debugf("template: %s", template)
+			client.Log.Debugf("Notices: %v", notices)
+			client.Log.Debugf("Errors: %v", errors)
+
+			if len(notices) < 1 && len(errors) < 1 {
+				c.Redirect(http.StatusSeeOther, showPath(c, prefix))
+				return
+			}
+
+			session := sessions.Default(c)
+			if len(notices) > 0 {
+				session.AddFlash(notices, "_notices")
+			}
+			if len(errors) > 0 {
+				session.AddFlash(errors, "_errors")
+			}
+			err := session.Save()
+			if err != nil {
+				client.Log.Errorf(err.Error())
+			}
 			c.Redirect(http.StatusSeeOther, showPath(c, prefix))
 		default:
+			client.Log.Debugf("template: %s", template)
+			client.Log.Debugf("Notices: %v", restful.NoticesFrom(c))
+			client.Log.Debugf("Errors: %v", restful.ErrorsFrom(c))
 			cu, err := client.User.Current(c)
 			if err != nil {
 				client.Log.Debugf(err.Error())
