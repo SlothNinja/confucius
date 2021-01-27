@@ -18,8 +18,8 @@ func init() {
 }
 
 func (g *Game) pass(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	if _, err := g.validatePlayerAction(c, cu); err != nil {
 		return "", game.None, err

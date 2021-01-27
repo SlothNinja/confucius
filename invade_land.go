@@ -17,8 +17,8 @@ func init() {
 }
 
 func (g *Game) invadeLand(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	// Get Indices and Cards
 	box, cards, cubes, err := g.validateInvadeLand(c, cu)
@@ -73,8 +73,8 @@ func (e *invadeLandEntry) HTML() template.HTML {
 }
 
 func (g *Game) validateInvadeLand(c *gin.Context, cu *user.User) (*ForeignLandBox, ConCards, int, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	cubes, err := g.validatePlayerAction(c, cu)
 	if err != nil {

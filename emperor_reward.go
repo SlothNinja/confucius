@@ -39,8 +39,8 @@ func (p *Player) canEmperorReward() bool {
 }
 
 func (g *Game) takeCash(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	cd, err := g.validateTakeCash(c, cu)
 	if err != nil {
@@ -81,8 +81,8 @@ func (e *takeCashEntry) HTML() template.HTML {
 }
 
 func (g *Game) validateTakeCash(c *gin.Context, cu *user.User) (*EmperorCard, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	_, err := g.validatePlayerAction(c, cu)
 	if err != nil {
@@ -101,8 +101,8 @@ func (g *Game) validateTakeCash(c *gin.Context, cu *user.User) (*EmperorCard, er
 }
 
 func (g *Game) takeGift(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	cd, gc, err := g.validateTakeGift(c, cu)
 	if err != nil {
@@ -151,8 +151,8 @@ func (e *takeGiftEntry) HTML() template.HTML {
 }
 
 func (g *Game) validateTakeGift(c *gin.Context, cu *user.User) (*EmperorCard, *GiftCard, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	_, err := g.validatePlayerAction(c, cu)
 	if err != nil {
@@ -181,8 +181,8 @@ func (g *Game) validateTakeGift(c *gin.Context, cu *user.User) (*EmperorCard, *G
 }
 
 func (g *Game) takeArmy(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	cd, err := g.validateTakeArmy(c, cu)
 	if err != nil {
@@ -226,8 +226,8 @@ func (e *takeArmyEntry) HTML() template.HTML {
 }
 
 func (g *Game) validateTakeArmy(c *gin.Context, cu *user.User) (*EmperorCard, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	_, err := g.validatePlayerAction(c, cu)
 	if err != nil {
@@ -251,8 +251,8 @@ func (g *Game) validateTakeArmy(c *gin.Context, cu *user.User) (*EmperorCard, er
 }
 
 func (g *Game) takeExtraAction(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	cd, err := g.validateTakeExtraAction(c, cu)
 	if err != nil {
@@ -294,8 +294,8 @@ func (e *takeExtraActionEntry) HTML() template.HTML {
 }
 
 func (g *Game) validateTakeExtraAction(c *gin.Context, cu *user.User) (*EmperorCard, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	_, err := g.validatePlayerAction(c, cu)
 	if err != nil {
@@ -314,8 +314,8 @@ func (g *Game) validateTakeExtraAction(c *gin.Context, cu *user.User) (*EmperorC
 }
 
 func (g *Game) avengeEmperor(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	eCard, err := g.validateAvengeEmperor(c, cu)
 	if err != nil {
@@ -360,8 +360,8 @@ func (e *avengeEmperorEntry) HTML() template.HTML {
 }
 
 func (g *Game) validateAvengeEmperor(c *gin.Context, cu *user.User) (*EmperorCard, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	_, err := g.validatePlayerAction(c, cu)
 	if err != nil {
@@ -384,8 +384,8 @@ func (g *Game) validateAvengeEmperor(c *gin.Context, cu *user.User) (*EmperorCar
 }
 
 func (g *Game) takeBriberyReward(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	cd, cs, ministry, o, err := g.validateBriberyReward(c, cu)
 	if err != nil {
@@ -449,8 +449,8 @@ func (e *takeBriberyRewardEntry) HTML() template.HTML {
 }
 
 func (g *Game) validateBriberyReward(c *gin.Context, cu *user.User) (*EmperorCard, ConCards, *Ministry, *OfficialTile, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	if _, err := g.validatePlayerAction(c, cu); err != nil {
 		return nil, nil, nil, nil, err

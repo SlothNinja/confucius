@@ -5,8 +5,8 @@ import (
 )
 
 func (g *Game) imperialFavourPhase() {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	g.Phase = ImperialFavour
 	g.ChiefMinister().ActionCubes += 1

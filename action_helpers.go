@@ -13,8 +13,8 @@ import (
 )
 
 func (g *Game) getForeignLandBox(c *gin.Context, formValue string) (*ForeignLandBox, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	landParams := strings.Split(c.PostForm(formValue), "-")
 	if landParams[0] == "None" {

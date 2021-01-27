@@ -15,8 +15,8 @@ func init() {
 }
 
 func (g *Game) invasionPhase(c *gin.Context) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	g.Phase = Invasion
 	for i, land := range g.ForeignLands {

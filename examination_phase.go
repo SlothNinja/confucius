@@ -18,8 +18,8 @@ func init() {
 // Returns true if no further player actions are needed in order
 // to resolve examination phase.
 func (g *Game) examinationPhase(c *gin.Context, cu *user.User) bool {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	g.Phase = ImperialExamination
 
@@ -71,8 +71,8 @@ func (g *Game) examinationForced() bool {
 }
 
 func (g *Game) resolveExamination() {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	g.Phase = ExaminationResolution
 	g.beginningOfPhaseReset()

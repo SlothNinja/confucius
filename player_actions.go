@@ -8,8 +8,8 @@ import (
 )
 
 func (g *Game) validatePlayerAction(c *gin.Context, cu *user.User) (int, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	sid, err := g.getSpaceID(c)
 	if err != nil {

@@ -18,8 +18,8 @@ func init() {
 }
 
 func (g *Game) tempTransfer(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	p, err := g.validateTempTransfer(c, cu)
 	if err != nil {
@@ -37,8 +37,8 @@ func (g *Game) tempTransfer(c *gin.Context, cu *user.User) (string, game.ActionT
 }
 
 func (g *Game) autoTempTransferInfluence(from, to *Player) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	canceledGift := from.transferTempInfluenceTo(to)
 	from.newAutoTransferTempInfluenceInEntry(to, canceledGift)

@@ -17,8 +17,8 @@ func init() {
 }
 
 func (g *Game) recruitArmy(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	// Validate and get cards and cubes
 	cards, cubes, err := g.validateRecruitArmy(c, cu)

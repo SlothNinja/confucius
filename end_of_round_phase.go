@@ -15,9 +15,9 @@ func init() {
 	gob.RegisterName("*game.announceWinnersEntry", new(announceWinnersEntry))
 }
 
-func (client Client) endOfRoundPhase(c *gin.Context, g *Game) (contest.Contests, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+func (client *Client) endOfRoundPhase(c *gin.Context, g *Game) ([]*contest.Contest, error) {
+	client.Log.Debugf(msgEnter)
+	defer client.Log.Debugf(msgExit)
 
 	g.Phase = EndOfRound
 	g.placeNewOfficialsPhase(c)
@@ -30,8 +30,8 @@ func (client Client) endOfRoundPhase(c *gin.Context, g *Game) (contest.Contests,
 }
 
 func (g *Game) placeNewOfficialsPhase(c *gin.Context) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	for _, m := range g.Ministries {
 		g.placeNewOfficialIn(m)
@@ -50,8 +50,8 @@ func (g *Game) placeNewOfficialIn(m *Ministry) {
 }
 
 func (g *Game) newRoundPhase() {
-	log.Debugf("Entering")
-	defer log.Debugf("Entering")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgEnter)
 
 	g.Round += 1
 	for _, p := range g.Players() {

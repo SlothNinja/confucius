@@ -17,8 +17,8 @@ func init() {
 }
 
 func (g *Game) commercial(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	// Validate and get cards and cubes
 	cds, cbs, err := g.validateCommercial(c, cu)
@@ -78,8 +78,8 @@ func (e *commercialEntry) HTML() template.HTML {
 }
 
 func (g *Game) validateCommercial(c *gin.Context, cu *user.User) (ConCards, int, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	cbs, err := g.validatePlayerAction(c, cu)
 	if err != nil {

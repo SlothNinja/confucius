@@ -13,16 +13,16 @@ import (
 )
 
 func (g *Game) invokeInvadePhase(c *gin.Context) (string, game.ActionType, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	g.invasionPhase(c)
 	return "", game.Cache, nil
 }
 
 func (g *Game) adminHeader(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	h := struct {
 		Title         string           `form:"title"`
@@ -107,8 +107,8 @@ func (g *Game) adminHeader(c *gin.Context, cu *user.User) (string, game.ActionTy
 }
 
 //func (g *Game) adminState(ctx context.Context) (string, game.ActionType, error) {
-//	log.Debugf(ctx, "Entering")
-//	defer log.Debugf(ctx, "Exiting")
+//	log.Debugf(ctx, msgEnter)
+//	defer log.Debugf(ctx, msgExit)
 //
 //	h := game.NewHeader(ctx, nil)
 //	if err := restful.BindWith(ctx, h, binding.FormPost); err != nil {

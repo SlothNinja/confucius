@@ -17,8 +17,8 @@ func init() {
 }
 
 func (g *Game) bribeOfficial(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	cards, ministry, official, cubes, err := g.validateBribeOfficial(c, cu)
 	if err != nil {

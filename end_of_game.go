@@ -13,9 +13,9 @@ import (
 	"github.com/mailjet/mailjet-apiv3-go"
 )
 
-func (client Client) endOfGamePhase(c *gin.Context, g *Game) (contest.Contests, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+func (client *Client) endOfGamePhase(c *gin.Context, g *Game) ([]*contest.Contest, error) {
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	if !g.endGame() {
 		g.newRoundPhase()
@@ -46,7 +46,7 @@ func (ms Ministries) allResolved() bool {
 	return true
 }
 
-func (client Client) endGameScoring(c *gin.Context, g *Game) (contest.Contests, error) {
+func (client *Client) endGameScoring(c *gin.Context, g *Game) ([]*contest.Contest, error) {
 	g.Phase = EndGameScoring
 	g.ScoreChiefMinister()
 	g.ScoreAdmiral()

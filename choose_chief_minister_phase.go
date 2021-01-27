@@ -18,8 +18,8 @@ func init() {
 }
 
 func (g *Game) chooseChiefMinisterPhase() {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	g.Phase = ChooseChiefMinister
 	if g.Round == 1 {
@@ -34,8 +34,8 @@ func (g *Game) chooseChiefMinisterPhase() {
 }
 
 func (g *Game) chooseChiefMinister(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	recipient, err := g.validateChooseChiefMinister(c, cu)
 	if err != nil {
@@ -78,8 +78,8 @@ func (e *chooseChiefMinisterEntry) HTML() template.HTML {
 }
 
 func (g *Game) validateChooseChiefMinister(c *gin.Context, cu *user.User) (*Player, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	recipientID, err := strconv.Atoi(c.PostForm("player"))
 	if err != nil {

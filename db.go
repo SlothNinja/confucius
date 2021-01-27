@@ -36,7 +36,7 @@ func (g *Game) NewKey(c *gin.Context, id int64) *datastore.Key {
 	return newKey(c, id)
 }
 
-func (client Client) init(c *gin.Context, g *Game) error {
+func (client *Client) init(c *gin.Context, g *Game) error {
 	err := client.Game.AfterLoad(c, g.Header)
 	if err != nil {
 		return err
@@ -68,13 +68,13 @@ func (client Client) init(c *gin.Context, g *Game) error {
 	return nil
 }
 
-func (client Client) AfterCache(c *gin.Context, g *Game) error {
+func (client *Client) AfterCache(c *gin.Context, g *Game) error {
 	return client.init(c, g)
 }
 
 func (g *Game) fromForm(c *gin.Context, cu *user.User) error {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	obj := struct {
 		Title          string `form:"title"`

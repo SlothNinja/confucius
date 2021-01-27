@@ -135,13 +135,13 @@ func (ps Players) removeAt(i int) Players {
 	return append(ps[:i], ps[i+1:]...)
 }
 
-func (client Client) determinePlaces(c *gin.Context, g *Game) (contest.Places, error) {
+func (client *Client) determinePlaces(c *gin.Context, g *Game) ([]contest.ResultsMap, error) {
 	// sort players by score
 	players := g.Players()
 	sort.Sort(Reverse{ByAll{players}})
 	g.setPlayers(players)
 
-	places := make(contest.Places, 0)
+	places := make([]contest.ResultsMap, 0)
 	if g.AdmiralVariant {
 		winner := g.Players()[0]
 		if g.Players()[0].Score == g.Players()[1].Score {
@@ -159,7 +159,7 @@ func (client Client) determinePlaces(c *gin.Context, g *Game) (contest.Places, e
 	}
 	for i, p1 := range g.Players() {
 		rmap := make(contest.ResultsMap, 0)
-		results := make(contest.Results, 0)
+		results := make([]*contest.Result, 0)
 		for j, p2 := range g.Players() {
 			r, err := client.Rating.For(c, p2.User(), g.Type)
 			if err != nil {

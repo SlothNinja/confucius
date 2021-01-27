@@ -17,8 +17,8 @@ func init() {
 }
 
 func (g *Game) secureOfficial(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	cards, ministry, official, cubes, err := g.validateSecureOfficial(c, cu)
 	if err != nil {

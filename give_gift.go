@@ -17,8 +17,8 @@ func init() {
 }
 
 func (g *Game) giveGift(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	// Get Recipient and Gift
 	recipient, gift, cubes, err := g.validateGiveGift(c, cu)
@@ -72,8 +72,8 @@ func (e *giveGiftEntry) HTML() template.HTML {
 }
 
 func (g *Game) validateGiveGift(c *gin.Context, cu *user.User) (*Player, *GiftCard, int, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	cubes, err := g.validatePlayerAction(c, cu)
 	if err != nil {

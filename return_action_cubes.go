@@ -6,8 +6,8 @@ import (
 )
 
 func (g *Game) returnActionCubesPhase(c *gin.Context) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	for _, s := range g.ActionSpaces {
 		s.returnActionCubes()

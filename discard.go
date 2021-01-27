@@ -10,7 +10,6 @@ import (
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
 	"github.com/SlothNinja/user"
-	stats "github.com/SlothNinja/user-stats"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,8 +18,8 @@ func init() {
 }
 
 func (g *Game) discardPhase(c *gin.Context) bool {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	g.Phase = Discard
 	g.beginningOfPhaseReset()
@@ -39,8 +38,8 @@ func (g *Game) discardPhase(c *gin.Context) bool {
 }
 
 func (g *Game) discard(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	cards, err := g.validateDiscard(c, cu)
 	if err != nil {
@@ -83,8 +82,8 @@ func (e *discardEntry) HTML() template.HTML {
 }
 
 func (g *Game) validateDiscard(c *gin.Context, cu *user.User) (ConCards, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	cards, err := g.getConCards(c, "discard")
 	if err != nil {
@@ -111,7 +110,7 @@ func (g *Game) EnableDiscard(cu *user.User) bool {
 		!g.CurrentPlayer().PerformedAction
 }
 
-func (client Client) discardPhaseFinishTurn(c *gin.Context, g *Game, cu *user.User) (*stats.Stats, contest.Contests, error) {
+func (client *Client) discardPhaseFinishTurn(c *gin.Context, g *Game, cu *user.User) (*user.Stats, []*contest.Contest, error) {
 	s, err := g.validateFinishTurn(c, cu)
 	if err != nil {
 		return nil, nil, err

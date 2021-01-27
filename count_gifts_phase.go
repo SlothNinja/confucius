@@ -22,8 +22,8 @@ type GiftCount struct {
 type GiftCounts []*GiftCount
 
 func (g *Game) countGiftsPhase() {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	g.Phase = CountGifts
 	g.beginningOfPhaseReset()

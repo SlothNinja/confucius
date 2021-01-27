@@ -8,13 +8,12 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/user"
-	stats "github.com/SlothNinja/user-stats"
 	"github.com/gin-gonic/gin"
 )
 
 func (g *Game) ministryResolutionPhase(c *gin.Context, ending bool) bool {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	g.Phase = MinistryResolution
 
@@ -43,8 +42,8 @@ func (g *Game) ministryInProgress() *Ministry {
 }
 
 func (g *Game) initMinistryResolution(c *gin.Context, m *Ministry) bool {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	m.InProgress = true
 	for _, o := range m.Officials {
@@ -65,8 +64,8 @@ func (g *Game) playerCountsIn(m *Ministry) map[int]int {
 }
 
 func (g *Game) resolve(c *gin.Context, m *Ministry) bool {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	var playerCounts map[int]int
 	for playerCounts = g.playerCountsIn(m); len(playerCounts) > 2; playerCounts = g.playerCountsIn(m) {
@@ -219,9 +218,9 @@ func (m *Ministry) playerToTempTransfer(playerCounts map[int]int) *Player {
 	return nil
 }
 
-func (client Client) ministryResolutionFinishTurn(c *gin.Context, g *Game, cu *user.User) (*stats.Stats, contest.Contests, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+func (client *Client) ministryResolutionFinishTurn(c *gin.Context, g *Game, cu *user.User) (*user.Stats, []*contest.Contest, error) {
+	client.Log.Debugf(msgEnter)
+	defer client.Log.Debugf(msgExit)
 
 	s, err := g.validateFinishTurn(c, cu)
 	if err != nil {

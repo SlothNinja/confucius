@@ -15,10 +15,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (client Client) Register(t gtype.Type, r *gin.Engine) *gin.Engine {
+func (client *Client) register(t gtype.Type) *Client {
 	gob.Register(new(Game))
 	game.Register(t, newGamer, PhaseNames, nil)
-	return client.addRoutes(t.Prefix(), r)
+	return client.addRoutes(t.Prefix())
 }
 
 var ErrMustBeGame = errors.New("Resource must have type *Game.")
@@ -242,8 +242,8 @@ func (g *Game) setPlayers(players Players) {
 }
 
 func (g *Game) actionsPhase() {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	g.Phase = Actions
 }

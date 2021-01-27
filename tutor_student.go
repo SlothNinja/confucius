@@ -9,7 +9,6 @@ import (
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
 	"github.com/SlothNinja/user"
-	stats "github.com/SlothNinja/user-stats"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,8 +17,8 @@ func init() {
 }
 
 func (g *Game) tutorStudent(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	cards, player, err := g.validateTutorStudent(c, cu)
 	if err != nil {
@@ -105,8 +104,8 @@ func (e *tutorStudentEntry) HTML() template.HTML {
 }
 
 func (g *Game) validateTutorStudent(c *gin.Context, cu *user.User) (ConCards, *Player, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	cds, err := g.getConCards(c, "tutor-student")
 	if err != nil {
@@ -173,8 +172,8 @@ func (p *Player) TutorPlayers() Players {
 }
 
 func (p *Player) autoTutor() {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	var student *Player
 	if ps := p.TutorPlayers(); len(ps) == 1 {
@@ -188,9 +187,9 @@ func (p *Player) canAutoTutor() bool {
 	return (l == 1 && len(p.TutorPlayers()) == 1) || l == 0
 }
 
-func (g *Game) tutorStudentsPhaseFinishTurn(c *gin.Context, cu *user.User) (*stats.Stats, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+func (g *Game) tutorStudentsPhaseFinishTurn(c *gin.Context, cu *user.User) (*user.Stats, error) {
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	s, err := g.validateFinishTurn(c, cu)
 	if err != nil {
@@ -207,8 +206,8 @@ func (g *Game) tutorStudentsPhaseFinishTurn(c *gin.Context, cu *user.User) (*sta
 }
 
 func (g *Game) tutorStudentsPhaseNextPlayer(ps ...*Player) *Player {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	var p *Player
 	for p = g.nextPlayer(ps...); !g.Players().allPerformedAction() && p.canAutoTutor(); p = g.nextPlayer() {

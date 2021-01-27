@@ -67,8 +67,8 @@ func (g *GiftCard) PetitionDirections() []string {
 }
 
 func (g *Game) moveJunks(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	fromPlayer, toPlayer, junks, cubes, err := g.validateMoveJunks(c, cu)
 	if err != nil {
@@ -149,8 +149,8 @@ func (g *Game) validateMoveJunks(c *gin.Context, cu *user.User) (*Player, *Playe
 }
 
 func (g *Game) replaceStudent(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	p, cubes, err := g.validateReplaceStudent(c, cu)
 	if err != nil {
@@ -199,8 +199,8 @@ func (e *replaceStudentEntry) HTML() template.HTML {
 }
 
 func (g *Game) validateReplaceStudent(c *gin.Context, cu *user.User) (*Player, int, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	cbs, err := g.validatePlayerAction(c, cu)
 	if err != nil {
@@ -230,8 +230,8 @@ func (g *Game) validateReplaceStudent(c *gin.Context, cu *user.User) (*Player, i
 }
 
 func (g *Game) swapOfficials(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	ministry1, ministry2, official1, official2, cubes, err := g.validateSwapOfficials(c, cu)
 	if err != nil {
@@ -284,8 +284,8 @@ func (g *swapOfficialsEntry) HTML() template.HTML {
 }
 
 func (g *Game) validateSwapOfficials(c *gin.Context, cu *user.User) (*Ministry, *Ministry, *OfficialTile, *OfficialTile, int, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	cubes, err := g.validatePlayerAction(c, cu)
 	if err != nil {
@@ -323,8 +323,8 @@ func (g *Game) validateSwapOfficials(c *gin.Context, cu *user.User) (*Ministry, 
 }
 
 func (g *Game) redeployArmy(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	fromBox, toBox, cubes, err := g.validateRedeployArmy(c, cu)
 	if err != nil {
@@ -377,8 +377,8 @@ func (e *redeployArmyEntry) HTML() template.HTML {
 }
 
 func (g *Game) validateRedeployArmy(c *gin.Context, cu *user.User) (*ForeignLandBox, *ForeignLandBox, int, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	cubes, err := g.validatePlayerAction(c, cu)
 	if err != nil {
@@ -418,8 +418,8 @@ func (g *Game) validateRedeployArmy(c *gin.Context, cu *user.User) (*ForeignLand
 }
 
 func (g *Game) replaceInfluence(c *gin.Context, cu *user.User) (string, game.ActionType, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	ministry, official, player, cubes, err := g.validateReplaceInfluence(c, cu)
 	if err != nil {
@@ -475,8 +475,8 @@ func (e *replaceInfluenceEntry) HTML() template.HTML {
 }
 
 func (g *Game) validateReplaceInfluence(c *gin.Context, cu *user.User) (*Ministry, *OfficialTile, *Player, int, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	cubes, err := g.validatePlayerAction(c, cu)
 	if err != nil {
