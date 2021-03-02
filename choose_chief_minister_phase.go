@@ -3,6 +3,7 @@ package confucius
 import (
 	"encoding/gob"
 	"html/template"
+	"math/rand"
 	"strconv"
 
 	"github.com/SlothNinja/game"
@@ -105,4 +106,16 @@ func (g *Game) validateChooseChiefMinister(c *gin.Context, cu *user.User) (*Play
 
 func (g *Game) EnableChooseChiefMinister(cu *user.User) bool {
 	return g.IsCurrentPlayer(cu) && g.Phase == ChooseChiefMinister
+}
+
+func (g *Game) RandomTurnOrder() {
+	rand.Shuffle(len(g.Playerers), func(i, j int) {
+		g.Playerers[i], g.Playerers[j] = g.Playerers[j], g.Playerers[i]
+	})
+	g.SetCurrentPlayerers(g.Playerers[0])
+
+	g.OrderIDS = make(game.UserIndices, len(g.Playerers))
+	for i, p := range g.Playerers {
+		g.OrderIDS[i] = p.ID()
+	}
 }

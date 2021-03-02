@@ -234,7 +234,7 @@ func NewPlayer() *Player {
 	return p
 }
 
-func CreatePlayer(g *Game, u *user.User) *Player {
+func CreatePlayer(g *Game) *Player {
 	p := NewPlayer()
 	p.SetID(int(len(g.Players())))
 	p.SetGame(g)

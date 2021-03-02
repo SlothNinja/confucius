@@ -173,8 +173,8 @@ func (g *Game) Start(c *gin.Context) error {
 	g.GeneralID = NoPlayerID
 	g.AvengerID = NoPlayerID
 
-	for _, u := range g.Users {
-		g.addNewPlayer(u)
+	for _ = range g.UserIDS {
+		g.addNewPlayer()
 	}
 
 	g.OfficialsDeck = NewOfficialsDeck()
@@ -203,8 +203,8 @@ func (g *Game) Start(c *gin.Context) error {
 	return nil
 }
 
-func (g *Game) addNewPlayer(u *user.User) {
-	p := CreatePlayer(g, u)
+func (g *Game) addNewPlayer() {
+	p := CreatePlayer(g)
 	g.Playerers = append(g.Playerers, p)
 }
 

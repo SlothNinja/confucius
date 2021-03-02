@@ -113,13 +113,10 @@ func (g *Game) fromForm(c *gin.Context, cu *user.User) error {
 	g.AdmiralVariant = obj.AdmiralVariant
 	g.Password = obj.Password
 
-	g.Creator = cu
-	g.CreatorID = cu.ID()
-	g.CreatorSID = user.GenID(cu.GoogleID)
+	g.AddCreator(cu)
 	g.AddUser(cu)
 	g.Status = game.Recruiting
 	g.Type = gtype.Confucius
 
-	log.Debugf("g: %#v", g)
 	return nil
 }

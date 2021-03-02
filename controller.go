@@ -417,10 +417,40 @@ func (client *Client) saveWith(c *gin.Context, g *Game, cu *user.User, ks []*dat
 	return err
 }
 
+// Playerers game.Playerers
+// Log       game.GameLog
+// Junks     int `form:"junks"`
+
+// ChiefMinisterID int `form:"chief-minister-id"`
+// AdmiralID       int `form:"admiral-id"`
+// GeneralID       int `form:"general-id"`
+// AvengerID       int `form:"avenger-id"`
+
+// ActionSpaces ActionSpaces
+
+// Candidates     CandidateTiles
+// OfficialsDeck  OfficialsDeck
+// ConDeck        ConCards
+// ConDiscardPile ConCards
+// EmperorDeck    EmperorCards
+// EmperorDiscard EmperorCards
+
+// DistantLands DistantLands
+// ForeignLands ForeignLands
+
+// Ministries Ministries
+
+// Wall        int  `form:"wall"`
+// ExtraAction bool `form:"extra-action"`
+
+// BasicGame      bool `form:"basic-game"`
+// AdmiralVariant bool `form:"admiral-variant"`
+
 func (g *Game) encode(cx *gin.Context) error {
 	log.Debugf(msgEnter)
 	defer log.Debugf(msgExit)
 
+	log.Debugf("state: %#v", g.State)
 	encoded, err := codec.Encode(g.State)
 	if err != nil {
 		return err
@@ -869,21 +899,21 @@ func (g *Game) updateHeader() {
 	default:
 		g.Progress = fmt.Sprintf("<div>Round: %d</div><div>Phase: %s</div>", g.Round, g.PhaseName())
 	}
-	if u := g.Creator; u != nil {
-		g.CreatorSID = user.GenID(u.GoogleID)
-		g.CreatorName = u.Name
-	}
+	// if u := g.Creator; u != nil {
+	// 	g.CreatorSID = user.GenID(u.GoogleID)
+	// 	g.CreatorName = u.Name
+	// }
 
-	if l := len(g.Users); l > 0 {
-		g.UserSIDS = make([]string, l)
-		g.UserNames = make([]string, l)
-		g.UserEmails = make([]string, l)
-		for i, u := range g.Users {
-			g.UserSIDS[i] = user.GenID(u.GoogleID)
-			g.UserNames[i] = u.Name
-			g.UserEmails[i] = u.Email
-		}
-	}
+	// if l := len(g.Users); l > 0 {
+	// 	g.UserSIDS = make([]string, l)
+	// 	g.UserNames = make([]string, l)
+	// 	g.UserEmails = make([]string, l)
+	// 	for i, u := range g.Users {
+	// 		g.UserSIDS[i] = user.GenID(u.GoogleID)
+	// 		g.UserNames[i] = u.Name
+	// 		g.UserEmails[i] = u.Email
+	// 	}
+	// }
 }
 func getID(c *gin.Context) (int64, error) {
 	id, err := strconv.ParseInt(c.Param("hid"), 10, 64)
